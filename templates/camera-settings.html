@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Settings - OpenIPC Ground Station</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Radxa Zero 3W -- OpenIPC Ground Station</h1>
+    </header>
+    <main>
+        <div class="navigation">
+            <a href="{{ url_for('index') }}" class="button">Back to Home</a>
+            <button id="loadConfig" class="button">Load Current Configuration</button>
+        </div>
+        
+        <div class="config-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form id="cameraSettingsForm" method="POST">
+                <!-- Majestic Section -->
+                <div class="config-section">
+                    <h3>Majestic Settings</h3>
+                    <div class="config-field">
+                        <label for="fps">FPS:</label>
+                        <input type="number" id="fps" name="fps" class="config-input" value="{{ majestic.fps if majestic }}">
+                    </div>
+                    <div class="config-field">
+                        <label for="size">Size:</label>
+                        <input type="text" id="size" name="size" class="config-input" value="{{ majestic.size if majestic }}">
+                    </div>
+                    <div class="config-field">
+                        <label for="bitrate">Bitrate:</label>
+                        <input type="number" id="bitrate" name="bitrate" class="config-input" value="{{ majestic.bitrate if majestic }}">
+                    </div>
+                </div>
+
+                <!-- WFB Section -->
+                <div class="config-section">
+                    <h3>WFB Settings</h3>
+                    <div class="config-field">
+                        <label for="channel">Channel:</label>
+                        <input type="number" id="channel" name="channel" class="config-input" value="{{ wfb.channel if wfb }}">
+                    </div>
+                    <div class="config-field">
+                        <label for="txpower_override">TX Power Override:</label>
+                        <input type="number" id="txpower_override" name="txpower_override" class="config-input" value="{{ wfb.txpower_override if wfb }}">
+                    </div>
+                    <div class="config-field">
+                        <label for="stbc">STBC:</label>
+                        <input type="number" id="stbc" name="stbc" class="config-input" min="0" max="1" value="{{ wfb.stbc if wfb }}">
+                    </div>
+                    <div class="config-field">
+                        <label for="ldpc">LDPC:</label>
+                        <input type="number" id="ldpc" name="ldpc" class="config-input" min="0" max="1" value="{{ wfb.ldpc if wfb }}">
+                    </div>
+                    <div class="config-field">
+                        <label for="mcs_index">MCS Index:</label>
+                        <input type="number" id="mcs_index" name="mcs_index" class="config-input" value="{{ wfb.mcs_index if wfb }}">
+                    </div>
+                    <div class="config-field">
+                        <label for="fec_k">FEC K:</label>
+                        <input type="number" id="fec_k" name="fec_k" class="config-input" value="{{ wfb.fec_k if wfb }}">
+                    </div>
+                    <div class="config-field">
+                        <label for="fec_n">FEC N:</label>
+                        <input type="number" id="fec_n" name="fec_n" class="config-input" value="{{ wfb.fec_n if wfb }}">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button button-save">Update Settings</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const form = document.getElementById('cameraSettingsForm');
+        const loadConfigBtn = document.getElementById('loadConfig');
+        
+        // Store original values
+        let originalValues = {};
+        
+        // Function to store current form values
+        function storeOriginalValues() {
+            const inputs = form.querySelectorAll('input');
+            inputs.forEach(input => {
+                originalValues[input.name] = input.value;
+            });
+        }
+
+        // Store initial values when page loads
+        window.addEventListener('load', storeOriginalValues);
+
+        // Load configuration button handler
+        loadConfigBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/camera/load-config');
+                const data = await response.json();
+                
+                // Update form fields with received data
+                Object.entries(data).forEach(([key, value]) => {
+                    const input = document.getElementById(key);
+                    if (input) {
+                        input.value = value;
+                    }
+                });
+                
+                // Store new values as original
+                storeOriginalValues();
+            } catch (error) {
+                console.error('Error loading configuration:', error);
+            }
+        });
+
+        // Form submission handler
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Collect changed fields
+            const formData = new FormData(form);
+            const changedFields = {};
+            
+            for (const [name, value] of formData.entries()) {
+                if (value !== originalValues[name]) {
+                    changedFields[name] = value;
+                }
+            }
+            
+            // Only submit if there are changes
+            if (Object.keys(changedFields).length > 0) {
+                try {
+                    const response = await fetch('/camera/update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(changedFields),
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        // Update original values after successful update
+                        storeOriginalValues();
+                        alert('Settings updated successfully!');
+                    } else {
+                        alert('Error updating settings: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Error updating settings:', error);
+                    alert('Error updating settings. Please try again.');
+                }
+            } else {
+                alert('No changes detected.');
+            }
+        });
+    </script>
+</body>
+</html>
