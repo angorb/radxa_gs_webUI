@@ -1,17 +1,16 @@
 #!/bin/bash
 
-FPS=60
-SIZE=1920x1080
-BITRATE=4096
-GOPSIZE=1
-
-CHANNEL=161
-TXPOWER_OVERRIDE=1
-STBC=0
-LDPC=0
-MCS_INDEX=1
-FEC_K=8
-FEC_N=12
+: "${FPS:=60}"
+: "${SIZE:=1920x1080}"
+: "${BITRATE:=4096}"
+: "${GOPSIZE:=1}"
+: "${CHANNEL:=161}"
+: "${TXPOWER_OVERRIDE:=1}"
+: "${STBC:=0}"
+: "${LDPC:=0}"
+: "${MCS_INDEX:=1}"
+: "${FEC_K:=8}"
+: "${FEC_N:=12}"
 
 read_wfb_config() {
     sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 'cat /etc/wfb.conf'
