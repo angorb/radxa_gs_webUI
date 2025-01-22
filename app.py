@@ -242,6 +242,7 @@ def update_camera_settings():
             'fps': 'update_fps',
             'size': 'update_size',
             'bitrate': 'update_bitrate',
+            'gopSize': 'update_gopSize',
             'channel': 'update_channel',
             'txpower_override': 'update_txpower_override',
             'stbc': 'update_stbc',
