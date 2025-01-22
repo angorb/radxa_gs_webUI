@@ -43,8 +43,9 @@
                     </div>
                     <div class="config-field">
                         <label for="gopSize">GOP Size:</label>
-                        <input type="number" id="gopSize" name="gopSize" class="config-input" value="{{ majestic.gopSize if majestic }}">
+                        <input type="number" id="gopSize" name="gopSize" class="config-input" step="0.1" min="0" value="{{ majestic.gopSize if majestic }}">
                     </div>
+                </div>
                 </div>
                 </div>
 
