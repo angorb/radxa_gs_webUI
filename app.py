@@ -216,6 +216,7 @@ def load_camera_config():
             'fps': str(video_config.get('fps', '60')),
             'size': str(video_config.get('size', '1920x1080')),
             'bitrate': str(video_config.get('bitrate', '4096')),
+            'gopSize': str(video_config.get('gopSize', '1')),
             'channel': wfb_config.get('channel', '161'),
             'txpower_override': wfb_config.get('driver_txpower_override', '1'),
             'stbc': wfb_config.get('stbc', '0'),
