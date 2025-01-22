@@ -255,9 +255,9 @@ def update_camera_settings():
         # Execute update functions for changed fields
         for field, value in changes.items():
             if field in function_map:
-                # Set the corresponding environment variable
-                env_var = field.upper()
-                os.environ[env_var] = str(value)
+                # Create a new environment with all current env vars plus our new one
+                env = os.environ.copy()
+                env[field.upper()] = str(value)
                 
                 # Run the update function
                 subprocess.run(['bash', '-c', f'source {COMMANDS_SCRIPT} && {function_map[field]}'],
