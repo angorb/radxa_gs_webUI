@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Editor - OpenIPC Ground Station</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Radxa Zero 3W -- OpenIPC Ground Station</h1>
+    </header>
+    <main>
+        <div class="navigation">
+            <a href="{{ url_for('index') }}" class="button">Back to Home</a>
+        </div>
+        
+        <div class="config-container">
+            <h2>Configuration Files</h2>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Regular Config Files Section -->
+            {% if configs %}
+                <div class="config-list">
+                    {% for config in configs %}
+                    <div class="config-item">
+                        <span class="config-path">{{ config.path }}</span>
+                        <a href="{{ url_for('edit_config', filepath=config.path.lstrip('/')) }}" class="button button-edit">Edit</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-configs">No configuration files found.</p>
+            {% endif %}
+            
+            <!-- gs.key Section -->
+            <div class="gskey-section config-section">
+                <h3>Ground Station Key</h3>
+                <div class="gskey-status">
+                    {% if gs_key_exists %}
+                        <p class="status-text">Current gs.key file size: {{ "%.2f"|format(gs_key_size / 1024) }} KB</p>
+                    {% else %}
+                        <p class="status-text">No gs.key file present</p>
+                    {% endif %}
+                </div>
+                
+                <form action="{{ url_for('upload_gskey') }}" method="POST" enctype="multipart/form-data" class="gskey-form">
+                    <div class="file-input-container">
+                        <label for="gskey" class="file-input-label">Select new gs.key file:</label>
+                        <input type="file" id="gskey" name="gskey" class="file-input" required>
+                    </div>
+                    <button type="submit" class="button button-upload">Upload New Key</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
