@@ -3,6 +3,7 @@
 FPS=60
 SIZE=1920x1080
 BITRATE=4096
+GOPSIZE=1
 
 CHANNEL=161
 TXPOWER_OVERRIDE=1
@@ -35,6 +36,11 @@ echo "setting camera resolution to $SIZE"
 update_bitrate() {
 sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 "sed -i \"/video0:/,/video1:/ s/bitrate: [0-9x]*/bitrate: $BITRATE/\" /etc/majestic.yaml"
 echo "setting camera resolution to $BITRATE"
+}
+
+update_gopSize() {
+sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 "sed -i \"/video0:/,/video1:/ s/gopSize: [0-9x]*/gopSize: $GOPSIZE/\" /etc/majestic.yaml"
+echo "setting camera resolution to $GOPSIZE"
 }
 
 # Function to update channel
