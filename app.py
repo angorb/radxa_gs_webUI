@@ -1,12 +1,15 @@
-from flask import Flask, render_template, send_file, request, redirect, url_for, flash
+from flask import Flask, render_template, send_file, request, redirect, url_for, flash, jsonify
 import os
 from pathlib import Path
 import configparser
 from typing import Dict, List
 import shutil
+import subprocess
+import yaml
+import re
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Required for flash messages
+app.secret_key = os.urandom(24)
 
 MEDIA_FOLDER = '/media'
 GS_KEY_PATH = '/etc/gs.key'
@@ -16,8 +19,7 @@ CONFIG_WHITELIST = [
     '/config/scripts/osd',
     '/config/scripts/rec-fps'
 ]
-
-# Note: gs.key is handled separately
+COMMANDS_SCRIPT = os.path.join(os.path.dirname(__file__), 'commands.sh')
 
 def read_ini_file(filepath: str) -> Dict:
     config = configparser.ConfigParser()
@@ -169,6 +171,99 @@ def delete_file(filename):
         return redirect(url_for('files'))
     except Exception as e:
         return f"Error deleting file: {str(e)}", 400
+
+@app.route('/camera')
+def camera_settings():
+    return render_template('camera_settings.html')
+
+@app.route('/camera/load-config')
+def load_camera_config():
+    try:
+        # Run the read config commands
+        wfb_output = subprocess.check_output(['bash', '-c', f'source {COMMANDS_SCRIPT} && read_wfb_config'], 
+                                          stderr=subprocess.STDOUT,
+                                          text=True)
+        
+        majestic_output = subprocess.check_output(['bash', '-c', f'source {COMMANDS_SCRIPT} && read_majestic_config'],
+                                                stderr=subprocess.STDOUT,
+                                                text=True)
+        
+        # Parse WFB config
+        wfb_config = {}
+        for line in wfb_output.splitlines():
+            if '=' in line and not line.startswith('#'):
+                key, value = line.split('=', 1)
+                wfb_config[key.strip()] = value.strip()
+        
+        # Parse Majestic YAML config
+        try:
+            yaml_content = majestic_output.replace("Reading majestic configuration", "").strip()
+            majestic_config = yaml.safe_load(yaml_content)
+            
+            # Extract only video0 section
+            video_config = majestic_config.get('video0', {})
+            print("Found video0 config:", video_config)
+            
+        except yaml.YAMLError as e:
+            print(f"YAML parsing error: {e}")
+            video_config = {}
+        except Exception as e:
+            print(f"Error processing Majestic config: {e}")
+            video_config = {}
+        
+        # Combine configurations
+        config = {
+            'fps': str(video_config.get('fps', '60')),
+            'size': str(video_config.get('size', '1920x1080')),
+            'bitrate': str(video_config.get('bitrate', '4096')),
+            'channel': wfb_config.get('channel', '161'),
+            'txpower_override': wfb_config.get('driver_txpower_override', '1'),
+            'stbc': wfb_config.get('stbc', '0'),
+            'ldpc': wfb_config.get('ldpc', '0'),
+            'mcs_index': wfb_config.get('mcs_index', '1'),
+            'fec_k': wfb_config.get('fec_k', '8'),
+            'fec_n': wfb_config.get('fec_n', '12')
+        }
+        
+        print("Final config:", config)
+        return jsonify(config)
+    except Exception as e:
+        print(f"Error in load_camera_config: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/camera/update', methods=['POST'])
+def update_camera_settings():
+    try:
+        changes = request.json
+        
+        # Map frontend field names to bash function names
+        function_map = {
+            'fps': 'update_fps',
+            'size': 'update_size',
+            'bitrate': 'update_bitrate',
+            'channel': 'update_channel',
+            'txpower_override': 'update_txpower_override',
+            'stbc': 'update_stbc',
+            'ldpc': 'update_ldpc',
+            'mcs_index': 'update_mcs_index',
+            'fec_k': 'update_fec_k',
+            'fec_n': 'update_fec_n'
+        }
+        
+        # Execute update functions for changed fields
+        for field, value in changes.items():
+            if field in function_map:
+                # Set the corresponding environment variable
+                env_var = field.upper()
+                os.environ[env_var] = str(value)
+                
+                # Run the update function
+                subprocess.run(['bash', '-c', f'source {COMMANDS_SCRIPT} && {function_map[field]}'],
+                             check=True)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
