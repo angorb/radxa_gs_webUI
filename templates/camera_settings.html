@@ -104,7 +104,7 @@
     </main>
 
     <script>
-        const form = document.getElementById('cameraSettingsForm');
+const form = document.getElementById('cameraSettingsForm');
 const loadConfigBtn = document.getElementById('loadConfig');
 const loadingOverlay = document.querySelector('.loading-overlay');
 const errorMessage = document.getElementById('errorMessage');
@@ -158,12 +158,49 @@ function updateFormFields(data) {
 }
 
 // Function to update loading message
-function updateLoadingMessage(message, retryCount = null) {
-    document.getElementById('loadingMessage').textContent = message;
-    if (retryCount !== null) {
-        document.getElementById('retryMessage').textContent = `Attempt ${retryCount} of 3`;
+function updateLoadingMessage(message, attempt = null) {
+    const loadingMessage = document.getElementById('loadingMessage');
+    const retryMessage = document.getElementById('retryMessage');
+    
+    loadingMessage.textContent = message;
+    if (attempt !== null) {
+        retryMessage.textContent = `Attempt ${attempt} of 3`;
     } else {
-        document.getElementById('retryMessage').textContent = '';
+        retryMessage.textContent = '';
+    }
+}
+
+// Function to delay execution
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Function to attempt loading config
+async function attemptLoadConfig(attempt = 1) {
+    updateLoadingMessage('Loading configuration...', attempt);
+    
+    try {
+        const response = await fetch('/camera/load-config');
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to load configuration');
+        }
+        
+        if (data.success) {
+            updateFormFields(data.data);
+            updateLoadingMessage('Configuration loaded successfully');
+            return true;
+        } else {
+            throw new Error(data.message || 'Failed to load configuration');
+        }
+    } catch (error) {
+        if (attempt < 3) {
+            console.log(`Attempt ${attempt} failed, retrying...`);
+            await delay(2000); // Wait 2 seconds before retry
+            return attemptLoadConfig(attempt + 1);
+        } else {
+            showError('Failed to connect after 3 attempts. Please check the camera connection.');
+            return false;
+        }
     }
 }
 
@@ -173,43 +210,16 @@ window.addEventListener('load', storeOriginalValues);
 // Load configuration button handler
 loadConfigBtn.addEventListener('click', async () => {
     hideError();
-    let attempt = 1;
-    const maxAttempts = 3;
-    const retryDelay = 2000; // 2 seconds
+    showLoading();
     
-    async function tryLoadConfig() {
-        showLoading();
-        updateLoadingMessage('Loading configuration...', attempt);
-        
-        try {
-            const response = await fetch('/camera/load-config');
-            const data = await response.json();
-            
-            if (!response.ok) {
-                if (attempt < maxAttempts && response.status === 404) {  // 404 means camera not reachable
-                    attempt++;
-                    updateLoadingMessage('Retrying connection...', attempt);
-                    await new Promise(resolve => setTimeout(resolve, retryDelay));
-                    return tryLoadConfig();  // Retry
-                }
-                throw new Error(data.message || 'Failed to load configuration');
-            }
-            
-            if (data.success) {
-                updateFormFields(data.data);
-                updateLoadingMessage('Configuration loaded successfully');
-            } else {
-                throw new Error(data.message || 'Failed to load configuration');
-            }
-        } catch (error) {
-            console.error('Error loading configuration:', error);
-            showError(error.message || 'Error loading configuration. Please try again.');
-        } finally {
-            hideLoading();
+    try {
+        const success = await attemptLoadConfig(1);
+        if (!success) {
+            console.log('All attempts failed');
         }
+    } finally {
+        hideLoading();
     }
-    
-    tryLoadConfig();
 });
 
 // Form submission handler
@@ -217,7 +227,6 @@ form.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideError();
     showLoading();
-    updateLoadingMessage('Updating settings...');
 
     // Collect changed fields only
     const formData = new FormData(form);
@@ -236,7 +245,6 @@ form.addEventListener('submit', async (e) => {
     }
 
     try {
-        console.log('Sending changes:', changedFields);
         const response = await fetch('/camera/update', {
             method: 'POST',
             headers: {
@@ -245,9 +253,7 @@ form.addEventListener('submit', async (e) => {
             body: JSON.stringify(changedFields)
         });
 
-        console.log('Response status:', response.status);
         const result = await response.json();
-        console.log('Response data:', result);
 
         if (!response.ok) {
             throw new Error(result.message || 'Failed to update settings');
@@ -263,7 +269,6 @@ form.addEventListener('submit', async (e) => {
             throw new Error(result.message || 'Failed to update settings');
         }
     } catch (error) {
-        console.error('Error updating settings:', error);
         showError(error.message || 'Error updating settings. Please try again.');
     } finally {
         hideLoading();
@@ -272,7 +277,6 @@ form.addEventListener('submit', async (e) => {
 
 // Reboot button handler
 rebootButton.addEventListener('click', async () => {
-    // Show confirmation dialog
     const confirmed = confirm('Are you sure you want to reboot the camera? This will interrupt any ongoing transmissions.');
     
     if (!confirmed) {
@@ -303,7 +307,6 @@ rebootButton.addEventListener('click', async () => {
             throw new Error(result.message || 'Failed to reboot camera');
         }
     } catch (error) {
-        console.error('Error rebooting camera:', error);
         showError(error.message || 'Error rebooting camera. Please try again.');
     } finally {
         hideLoading();
