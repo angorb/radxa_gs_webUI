@@ -437,3 +437,18 @@ main {
         max-width: 100%;
     }
 }
+.button-danger:hover {
+    background-color: #c82333;
+}
+
+.button-warning {
+    background-color: #ffc107;
+    color: #212529;
+    border: none;
+    transition: background-color 0.3s ease;
+    margin-right: 1rem;
+}
+
+.button-warning:hover {
+    background-color: #e0a800;
+}
