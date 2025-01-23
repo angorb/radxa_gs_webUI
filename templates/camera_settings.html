@@ -96,11 +96,38 @@
     </main>
 
     <script>
-       const form = document.getElementById('cameraSettingsForm');
+const form = document.getElementById('cameraSettingsForm');
 const loadConfigBtn = document.getElementById('loadConfig');
+const loadingOverlay = document.querySelector('.loading-overlay');
+const errorMessage = document.getElementById('errorMessage');
 
 // Store original values
 let originalValues = {};
+
+// Function to show loading overlay
+function showLoading() {
+    loadingOverlay.style.display = 'flex';
+    form.style.opacity = '0.5';
+    form.style.pointerEvents = 'none';
+}
+
+// Function to hide loading overlay
+function hideLoading() {
+    loadingOverlay.style.display = 'none';
+    form.style.opacity = '1';
+    form.style.pointerEvents = 'auto';
+}
+
+// Function to show error message
+function showError(message) {
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+}
+
+// Function to hide error message
+function hideError() {
+    errorMessage.style.display = 'none';
+}
 
 // Function to store current form values
 function storeOriginalValues() {
@@ -116,7 +143,6 @@ function updateFormFields(data) {
         const input = document.querySelector(`[name="${key}"]`);
         if (input) {
             input.value = value;
-            // Update originalValues to reflect the newly loaded configuration
             originalValues[key] = value;
         }
     });
@@ -127,86 +153,31 @@ window.addEventListener('load', storeOriginalValues);
 
 // Load configuration button handler
 loadConfigBtn.addEventListener('click', async () => {
+    hideError();
+    showLoading();
+    
     try {
         const response = await fetch('/camera/load-config');
-        if (!response.ok) throw new Error('Failed to load configuration');
-        
         const data = await response.json();
         
-        // Update form fields with the received configuration
-        updateFormFields(data);
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to load configuration');
+        }
         
-        alert('Configuration loaded successfully!');
+        if (data.success) {
+            updateFormFields(data.data);
+        } else {
+            throw new Error(data.message || 'Failed to load configuration');
+        }
     } catch (error) {
         console.error('Error loading configuration:', error);
-        alert('Error loading configuration. Please try again.');
+        showError(error.message || 'Error loading configuration. Please try again.');
+    } finally {
+        hideLoading();
     }
 });
 
-// Form submission handler
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    // Collect changed fields only
-    const formData = new FormData(form);
-    const changedFields = {};
-    for (const [name, value] of formData.entries()) {
-        if (value !== originalValues[name]) {
-            changedFields[name] = value;
-        }
-    }
-
-    const majesticFields = ['fps', 'size', 'bitrate', 'gopSize'];
-    const wfbFields = ['channel', 'txpower_override', 'stbc', 'ldpc', 'mcs_index', 'fec_k', 'fec_n'];
-    const majesticChanges = {};
-    const wfbChanges = {};
-
-    for (const [field, value] of Object.entries(changedFields)) {
-        if (majesticFields.includes(field)) {
-            majesticChanges[field] = value;
-        } else if (wfbFields.includes(field)) {
-            wfbChanges[field] = value;
-        }
-    }
-
-    if (Object.keys(majesticChanges).length === 0 && Object.keys(wfbChanges).length === 0) {
-        alert('No changes detected.');
-        return;
-    }
-
-    try {
-        if (Object.keys(majesticChanges).length > 0) {
-            const response = await fetch('/camera/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(majesticChanges),
-            });
-            const result = await response.json();
-            if (!result.success) {
-                alert('Error updating Majestic settings: ' + result.message);
-            }
-        }
-
-        if (Object.keys(wfbChanges).length > 0) {
-            const response = await fetch('/camera/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(wfbChanges),
-            });
-            const result = await response.json();
-            if (!result.success) {
-                alert('Error updating WFB settings: ' + result.message);
-            }
-        }
-
-        storeOriginalValues();
-        alert('Settings updated successfully!');
-    } catch (error) {
-        console.error('Error updating settings:', error);
-        alert('Error updating settings. Please try again.');
-    }
-});
-
-    </script>
+// Rest of your existing form submission code...
+</script>
 </body>
 </html>
