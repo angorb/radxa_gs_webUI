@@ -236,13 +236,21 @@ def load_camera_config():
 def update_camera_settings():
     try:
         changes = request.json
+        if not changes:
+            return jsonify({'success': False, 'message': 'No changes detected'}), 400
+            
+        # Group fields by config type to minimize unnecessary updates
+        majestic_fields = {'fps', 'size', 'bitrate', 'gopSize'}
+        wfb_fields = {'channel', 'txpower_override', 'stbc', 'ldpc', 'mcs_index', 'fec_k', 'fec_n'}
         
         # Map frontend field names to environment variables and function names
         field_mapping = {
+            # Majestic config fields
             'fps': {'env': 'FPS', 'func': 'update_fps'},
             'size': {'env': 'SIZE', 'func': 'update_size'},
             'bitrate': {'env': 'BITRATE', 'func': 'update_bitrate'},
             'gopSize': {'env': 'GOPSIZE', 'func': 'update_gopSize'},
+            # WFB config fields
             'channel': {'env': 'CHANNEL', 'func': 'update_channel'},
             'txpower_override': {'env': 'TXPOWER_OVERRIDE', 'func': 'update_txpower_override'},
             'stbc': {'env': 'STBC', 'func': 'update_stbc'},
@@ -252,7 +260,12 @@ def update_camera_settings():
             'fec_n': {'env': 'FEC_N', 'func': 'update_fec_n'}
         }
         
-        # Execute update functions for changed fields
+        # Execute update functions for changed fields only
+        changed_fields = set(changes.keys())
+        if not changed_fields:
+            return jsonify({'success': False, 'message': 'No valid changes detected'}), 400
+
+        updated_fields = []
         for field, value in changes.items():
             if field in field_mapping:
                 # Create a new environment with all current env vars
@@ -262,19 +275,31 @@ def update_camera_settings():
                 
                 print(f"Updating {field} to {value} using {field_mapping[field]['env']}")
                 
-                # Run the update function with the modified environment
-                result = subprocess.run(
-                    ['bash', '-c', f'source {COMMANDS_SCRIPT} && {field_mapping[field]["func"]}'],
-                    env=env,
-                    check=True,
-                    text=True,
-                    capture_output=True
-                )
-                print(f"Command output: {result.stdout}")
-                if result.stderr:
-                    print(f"Command error: {result.stderr}")
+                try:
+                    # Run the update function with the modified environment
+                    result = subprocess.run(
+                        ['bash', '-c', f'source {COMMANDS_SCRIPT} && {field_mapping[field]["func"]}'],
+                        env=env,
+                        check=True,
+                        text=True,
+                        capture_output=True
+                    )
+                    print(f"Command output: {result.stdout}")
+                    if result.stderr:
+                        print(f"Command error: {result.stderr}")
+                    updated_fields.append(field)
+                except subprocess.CalledProcessError as e:
+                    print(f"Error updating {field}: {str(e)}")
+                    return jsonify({
+                        'success': False, 
+                        'message': f'Error updating {field}',
+                        'updated_fields': updated_fields
+                    }), 500
         
-        return jsonify({'success': True})
+        return jsonify({
+            'success': True,
+            'message': f'Successfully updated: {", ".join(updated_fields)}'
+        })
     except Exception as e:
         print(f"Error in update_camera_settings: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
