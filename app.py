@@ -23,48 +23,30 @@ CONFIG_WHITELIST = [
 ]
 COMMANDS_SCRIPT = os.path.join(os.path.dirname(__file__), 'commands.sh')
 
-def ping_host(host):
+def ping_host(host, max_retries=3, timeout=10):
     """
-    Returns True if host responds to a ping request, False otherwise
+    Returns True if host responds to a ping request, False otherwise.
+    Includes retry logic and configurable timeout.
+    
+    Args:
+        host (str): The host to ping
+        max_retries (int): Maximum number of retry attempts
+        timeout (int): Timeout in seconds for each ping attempt
     """
     # Option for count differs in Windows and Unix
     param = '-n' if platform.system().lower() == 'windows' else '-c'
     command = ['ping', param, '1', host]
     
-    try:
-        subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=5)
-        return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return False
-
-def read_ini_file(filepath: str) -> Dict:
-    config = configparser.ConfigParser()
-    try:
-        config.read(filepath)
-        return {section: dict(config[section]) for section in config.sections()}
-    except Exception as e:
-        return {}
-
-def write_ini_file(filepath: str, data: Dict) -> bool:
-    config = configparser.ConfigParser()
-    try:
-        # Load existing file first to preserve structure
-        config.read(filepath)
-        
-        # Update with new values
-        for section, values in data.items():
-            if not config.has_section(section):
-                config.add_section(section)
-            for key, value in values.items():
-                config.set(section, key, value)
-        
-        # Write to file
-        with open(filepath, 'w') as f:
-            config.write(f)
-        return True
-    except Exception as e:
-        print(f"Error writing config: {str(e)}")
-        return False
+    for attempt in range(max_retries):
+        try:
+            subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=timeout)
+            return True
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            if attempt < max_retries - 1:  # Don't sleep on the last attempt
+                time.sleep(2)  # Wait 2 seconds between retries
+            continue
+    
+    return False
 
 @app.route('/')
 def index():
