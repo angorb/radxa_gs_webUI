@@ -237,34 +237,46 @@ def update_camera_settings():
     try:
         changes = request.json
         
-        # Map frontend field names to bash function names
-        function_map = {
-            'fps': 'update_fps',
-            'size': 'update_size',
-            'bitrate': 'update_bitrate',
-            'gopSize': 'update_gopSize',
-            'channel': 'update_channel',
-            'txpower_override': 'update_txpower_override',
-            'stbc': 'update_stbc',
-            'ldpc': 'update_ldpc',
-            'mcs_index': 'update_mcs_index',
-            'fec_k': 'update_fec_k',
-            'fec_n': 'update_fec_n'
+        # Map frontend field names to environment variables and function names
+        field_mapping = {
+            'fps': {'env': 'FPS', 'func': 'update_fps'},
+            'size': {'env': 'SIZE', 'func': 'update_size'},
+            'bitrate': {'env': 'BITRATE', 'func': 'update_bitrate'},
+            'gopSize': {'env': 'GOPSIZE', 'func': 'update_gopSize'},
+            'channel': {'env': 'CHANNEL', 'func': 'update_channel'},
+            'txpower_override': {'env': 'TXPOWER_OVERRIDE', 'func': 'update_txpower_override'},
+            'stbc': {'env': 'STBC', 'func': 'update_stbc'},
+            'ldpc': {'env': 'LDPC', 'func': 'update_ldpc'},
+            'mcs_index': {'env': 'MCS_INDEX', 'func': 'update_mcs_index'},
+            'fec_k': {'env': 'FEC_K', 'func': 'update_fec_k'},
+            'fec_n': {'env': 'FEC_N', 'func': 'update_fec_n'}
         }
         
         # Execute update functions for changed fields
         for field, value in changes.items():
-            if field in function_map:
-                # Create a new environment with all current env vars plus our new one
+            if field in field_mapping:
+                # Create a new environment with all current env vars
                 env = os.environ.copy()
-                env[field.upper()] = str(value)
+                # Set the specific environment variable for this field
+                env[field_mapping[field]['env']] = str(value)
                 
-                # Run the update function
-                subprocess.run(['bash', '-c', f'source {COMMANDS_SCRIPT} && {function_map[field]}'],
-                             check=True)
+                print(f"Updating {field} to {value} using {field_mapping[field]['env']}")
+                
+                # Run the update function with the modified environment
+                result = subprocess.run(
+                    ['bash', '-c', f'source {COMMANDS_SCRIPT} && {field_mapping[field]["func"]}'],
+                    env=env,
+                    check=True,
+                    text=True,
+                    capture_output=True
+                )
+                print(f"Command output: {result.stdout}")
+                if result.stderr:
+                    print(f"Command error: {result.stderr}")
         
         return jsonify({'success': True})
     except Exception as e:
+        print(f"Error in update_camera_settings: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':
