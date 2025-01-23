@@ -192,7 +192,7 @@ def delete_file(filename):
 def camera_settings():
     return render_template('camera_settings.html')
 
-@app.route('/camera/load-config', methods=['GET'])
+@app.route('/camera/load-config')
 def load_camera_config():
     try:
         # First check if camera is reachable
@@ -202,123 +202,73 @@ def load_camera_config():
                 'message': 'Camera is not reachable. Please check the connection.'
             }), 404
         
-        # Rest of your existing load_camera_config code...
-        wfb_output = subprocess.check_output(['bash', '-c', f'source {COMMANDS_SCRIPT} && read_wfb_config'], 
-                                          stderr=subprocess.STDOUT,
-                                          text=True)
+        # If ping successful, proceed with existing functionality
+        wfb_output = subprocess.check_output(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && read_wfb_config'], 
+            stderr=subprocess.STDOUT,
+            text=True
+        )
         
-        majestic_output = subprocess.check_output(['bash', '-c', f'source {COMMANDS_SCRIPT} && read_majestic_config'],
-                                                stderr=subprocess.STDOUT,
-                                                text=True)
+        majestic_output = subprocess.check_output(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && read_majestic_config'],
+            stderr=subprocess.STDOUT,
+            text=True
+        )
         
-        # Parse configs and return data...
+        # Rest of your existing parsing logic...
+        # Parse WFB config
+        wfb_config = {}
+        for line in wfb_output.splitlines():
+            if '=' in line and not line.startswith('#'):
+                key, value = line.split('=', 1)
+                wfb_config[key.strip()] = value.strip()
+        
+        # Parse Majestic YAML config
+        try:
+            yaml_content = majestic_output.replace("Reading majestic configuration", "").strip()
+            majestic_config = yaml.safe_load(yaml_content)
+            video_config = majestic_config.get('video0', {})
+        except yaml.YAMLError as e:
+            print(f"YAML parsing error: {e}")
+            video_config = {}
+        
+        config = {
+            'fps': str(video_config.get('fps', '60')),
+            'size': str(video_config.get('size', '1920x1080')),
+            'bitrate': str(video_config.get('bitrate', '4096')),
+            'gopSize': str(video_config.get('gopSize', '1')),
+            'channel': wfb_config.get('channel', '161'),
+            'txpower_override': wfb_config.get('driver_txpower_override', '1'),
+            'stbc': wfb_config.get('stbc', '0'),
+            'ldpc': wfb_config.get('ldpc', '0'),
+            'mcs_index': wfb_config.get('mcs_index', '1'),
+            'fec_k': wfb_config.get('fec_k', '8'),
+            'fec_n': wfb_config.get('fec_n', '12')
+        }
+        
         return jsonify({
             'success': True,
             'data': config
         })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-@app.route('/camera/update', methods=['POST'])  # Make sure POST is explicitly allowed
-def update_camera_settings():
-    try:
-        if not ping_host('10.5.0.10'):
-            return jsonify({
-                'success': False,
-                'message': 'Camera is not reachable. Please check the connection.'
-            }), 404
-            
-        changes = request.get_json()  # Get JSON data from request
-        if not changes:
-            return jsonify({
-                'success': False,
-                'message': 'No changes detected'
-            }), 400
-            
-        # Process each changed field
-        for field, value in changes.items():
-            # Create environment variables dictionary
-            env = os.environ.copy()
-            if field == 'fps':
-                env['FPS'] = str(value)
-                command = 'update_fps'
-            elif field == 'size':
-                env['SIZE'] = str(value)
-                command = 'update_size'
-            elif field == 'bitrate':
-                env['BITRATE'] = str(value)
-                command = 'update_bitrate'
-            elif field == 'gopSize':
-                env['GOPSIZE'] = str(value)
-                command = 'update_gopSize'
-            elif field == 'channel':
-                env['CHANNEL'] = str(value)
-                command = 'update_channel'
-            elif field == 'txpower_override':
-                env['TXPOWER_OVERRIDE'] = str(value)
-                command = 'update_txpower_override'
-            elif field == 'stbc':
-                env['STBC'] = str(value)
-                command = 'update_stbc'
-            elif field == 'ldpc':
-                env['LDPC'] = str(value)
-                command = 'update_ldpc'
-            elif field == 'mcs_index':
-                env['MCS_INDEX'] = str(value)
-                command = 'update_mcs_index'
-            elif field == 'fec_k':
-                env['FEC_K'] = str(value)
-                command = 'update_fec_k'
-            elif field == 'fec_n':
-                env['FEC_N'] = str(value)
-                command = 'update_fec_n'
-            else:
-                continue
-
-            try:
-                subprocess.run(
-                    ['bash', '-c', f'source {COMMANDS_SCRIPT} && {command}'],
-                    env=env,
-                    check=True,
-                    text=True,
-                    capture_output=True
-                )
-            except subprocess.CalledProcessError as e:
-                return jsonify({
-                    'success': False,
-                    'message': f'Error updating {field}: {str(e)}'
-                }), 500
-
-        return jsonify({
-            'success': True,
-            'message': 'Settings updated successfully'
-        })
         
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error executing SSH commands: {str(e)}'
+        }), 500
     except Exception as e:
         return jsonify({
             'success': False,
-            'message': str(e)
+            'message': f'Unexpected error: {str(e)}'
         }), 500
 
 @app.route('/camera/update', methods=['POST'])
 def update_camera_settings():
     try:
-        # First check if camera is reachable
-        if not ping_host('10.5.0.10'):
-            return jsonify({
-                'success': False,
-                'message': 'Camera is not reachable. Please check the connection.'
-            }), 404
-            
-        changes = request.get_json()
+        changes = request.json
         if not changes:
             return jsonify({'success': False, 'message': 'No changes detected'}), 400
             
-        updated_fields = []
-        
         # Map frontend field names to environment variables and function names
         field_mapping = {
             # Majestic config fields
@@ -336,6 +286,12 @@ def update_camera_settings():
             'fec_n': {'env': 'FEC_N', 'func': 'update_fec_n'}
         }
         
+        # Only process fields that were actually changed
+        changed_fields = set(changes.keys())
+        if not changed_fields:
+            return jsonify({'success': False, 'message': 'No valid changes detected'}), 400
+
+        updated_fields = []
         for field, value in changes.items():
             if field in field_mapping:
                 # Create a new environment with all current env vars
@@ -343,8 +299,10 @@ def update_camera_settings():
                 # Set the specific environment variable for this field
                 env[field_mapping[field]['env']] = str(value)
                 
+                print(f"Updating {field} to {value} using {field_mapping[field]['env']}")
+                
                 try:
-                    # Run the update function for this field
+                    # Run only the update function for this specific changed field
                     result = subprocess.run(
                         ['bash', '-c', f'source {COMMANDS_SCRIPT} && {field_mapping[field]["func"]}'],
                         env=env,
@@ -371,6 +329,6 @@ def update_camera_settings():
     except Exception as e:
         print(f"Error in update_camera_settings: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
-        
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
