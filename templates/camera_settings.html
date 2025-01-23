@@ -46,8 +46,6 @@
                         <input type="number" id="gopSize" name="gopSize" class="config-input" step="0.1" min="0" value="{{ majestic.gopSize if majestic }}">
                     </div>
                 </div>
-                </div>
-                </div>
 
                 <!-- WFB Section -->
                 <div class="config-section">
@@ -92,10 +90,10 @@
     <script>
         const form = document.getElementById('cameraSettingsForm');
         const loadConfigBtn = document.getElementById('loadConfig');
-        
+
         // Store original values
         let originalValues = {};
-        
+
         // Function to store current form values
         function storeOriginalValues() {
             const inputs = form.querySelectorAll('input');
@@ -104,16 +102,16 @@
             });
         }
 
-        // Store initial values when page loads
+        // Store initial values when the page loads
         window.addEventListener('load', storeOriginalValues);
 
         // Load configuration button handler
         loadConfigBtn.addEventListener('click', async () => {
             try {
                 const response = await fetch('/camera/load-config');
-                const data = await response.json();
+                if (!response.ok) throw new Error('Failed to load configuration');
                 
-                // Update form fields with received data
+                const data = await response.json();
                 Object.entries(data).forEach(([key, value]) => {
                     const input = document.getElementById(key);
                     if (input) {
@@ -121,7 +119,6 @@
                     }
                 });
                 
-                // Store new values as original
                 storeOriginalValues();
             } catch (error) {
                 console.error('Error loading configuration:', error);
@@ -130,60 +127,65 @@
 
         // Form submission handler
         form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Collect changed fields
-    const formData = new FormData(form);
-    const changedFields = {};
-    let hasChanges = false;
-    
-    for (const [name, value] of formData.entries()) {
-        // Convert to same type for comparison
-        const origValue = originalValues[name];
-        const newValue = value;
-        
-        // Only include if values are actually different
-        if (String(origValue) !== String(newValue)) {
-            changedFields[name] = newValue;
-            hasChanges = true;
-        }
-    }
-    
-    // Only submit if there are changes
-    if (hasChanges) {
-        try {
-            const response = await fetch('/camera/update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(changedFields),
-            });
-            
-            const result = await response.json();
-            if (result.success) {
-                // Update original values for successfully updated fields
-                Object.entries(changedFields).forEach(([name, value]) => {
-                    originalValues[name] = value;
-                });
-                
-                alert(`Settings updated successfully! Updated fields: ${result.message}`);
-            } else {
-                alert('Error updating settings: ' + result.message);
-                // If there was a partial update, update the successful fields
-                if (result.updated_fields) {
-                    result.updated_fields.forEach(field => {
-                        originalValues[field] = changedFields[field];
-                    });
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const changedFields = {};
+            for (const [name, value] of formData.entries()) {
+                if (value !== originalValues[name]) {
+                    changedFields[name] = value;
                 }
             }
-        } catch (error) {
-            console.error('Error updating settings:', error);
-            alert('Error updating settings. Please try again.');
-        }
-    } else {
-        alert('No changes detected.');
-    }
+
+            const majesticFields = ['fps', 'size', 'bitrate', 'gopSize'];
+            const wfbFields = ['channel', 'txpower_override', 'stbc', 'ldpc', 'mcs_index', 'fec_k', 'fec_n'];
+            const majesticChanges = {};
+            const wfbChanges = {};
+
+            for (const [field, value] of Object.entries(changedFields)) {
+                if (majesticFields.includes(field)) {
+                    majesticChanges[field] = value;
+                } else if (wfbFields.includes(field)) {
+                    wfbChanges[field] = value;
+                }
+            }
+
+            if (Object.keys(majesticChanges).length === 0 && Object.keys(wfbChanges).length === 0) {
+                alert('No changes detected.');
+                return;
+            }
+
+            try {
+                if (Object.keys(majesticChanges).length > 0) {
+                    const response = await fetch('/camera/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(majesticChanges),
+                    });
+                    const result = await response.json();
+                    if (!result.success) {
+                        alert('Error updating Majestic settings: ' + result.message);
+                    }
+                }
+
+                if (Object.keys(wfbChanges).length > 0) {
+                    const response = await fetch('/camera/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(wfbChanges),
+                    });
+                    const result = await response.json();
+                    if (!result.success) {
+                        alert('Error updating WFB settings: ' + result.message);
+                    }
+                }
+
+                storeOriginalValues();
+                alert('Settings updated successfully!');
+            } catch (error) {
+                console.error('Error updating settings:', error);
+                alert('Error updating settings. Please try again.');
+            }
         });
     </script>
 </body>
