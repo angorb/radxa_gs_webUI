@@ -26,33 +26,16 @@ COMMANDS_SCRIPT = os.path.join(os.path.dirname(__file__), 'commands.sh')
 
 def ping_host(host):
     """
-    Returns True if host responds to a ping request within 10 seconds, False otherwise.
-    Includes 3 retry attempts.
+    Returns True if host responds to a ping request, False otherwise
     """
     param = '-n' if platform.system().lower() == 'windows' else '-c'
     command = ['ping', param, '1', host]
     
-    for attempt in range(3):  # Try 3 times
-        print(f"Attempting to ping {host} - Attempt {attempt + 1} of 3")
-        try:
-            result = subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=10)
-            print(f"Ping successful on attempt {attempt + 1}")
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"Ping failed on attempt {attempt + 1} with error: {str(e)}")
-            if attempt < 2:  # Don't sleep on last attempt
-                print(f"Waiting 2 seconds before retry...")
-                time.sleep(2)
-                continue
-        except subprocess.TimeoutExpired as e:
-            print(f"Ping timed out on attempt {attempt + 1}")
-            if attempt < 2:  # Don't sleep on last attempt
-                print(f"Waiting 2 seconds before retry...")
-                time.sleep(2)
-                continue
-    
-    print("All ping attempts failed")
-    return False
+    try:
+        subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=10)
+        return True
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return False
     
 @app.route('/')
 def index():
@@ -448,11 +431,13 @@ def camera_settings():
 def load_camera_config():
     try:
         # First check if camera is reachable
-        print("Starting camera reachability check...")
-        ping_result = ping_host('10.5.0.10')
-        print(f"Final ping result: {ping_result}")
-        
-        if not ping_result:
+        for attempt in range(3):  # Try 3 times
+            print(f"Attempting to connect - Attempt {attempt + 1} of 3")
+            if ping_host('10.5.0.10'):  # Using simple ping without retries since we're handling retries here
+                break
+            if attempt < 2:  # Don't wait after last attempt
+                time.sleep(2)
+        else:  # This runs if no break occurred (all attempts failed)
             return jsonify({
                 'success': False,
                 'message': 'Camera is not reachable after multiple attempts. Please check the connection.'
