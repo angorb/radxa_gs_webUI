@@ -11,6 +11,7 @@
 : "${MCS_INDEX:=1}"
 : "${FEC_K:=8}"
 : "${FEC_N:=12}"
+: "${BANDWIDTH:=20}"
 
 read_wfb_config() {
     sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 'cat /etc/wfb.conf'
@@ -82,6 +83,11 @@ update_fec_k() {
 update_fec_n() {
     sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 "sed -i '/^fec_n=/ s/=.*/=$FEC_N/' /etc/wfb.conf"
     echo "Setting FEC N to $FEC_N"
+}
+
+update_bandwidth() {
+    sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 "sed -i '/^bandwidth=/ s/=.*/=$BANDWIDTH/' /etc/wfb.conf"
+    echo "Setting Bandwidth to $BANDWIDTH"
 }
 
 update_reboot(){
