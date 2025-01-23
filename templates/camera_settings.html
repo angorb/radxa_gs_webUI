@@ -230,15 +230,28 @@ async function attemptLoadConfig(attempt = 1) {
 window.addEventListener('load', storeOriginalValues);
 
 // Load configuration button handler
+// Load configuration button handler
 loadConfigBtn.addEventListener('click', async () => {
     hideError();
     showLoading();
     
     try {
-        const success = await attemptLoadConfig(1);
-        if (!success) {
-            console.log('All attempts failed');
+        const response = await fetch('/camera/load-config');
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to load configuration');
         }
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to load configuration');
+        }
+        
+        // Only update if we have valid data
+        updateFormFields(data.data);
+        
+    } catch (error) {
+        showError(error.message || 'Error loading configuration. Please try again.');
     } finally {
         hideLoading();
     }
