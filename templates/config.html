@@ -29,13 +29,13 @@
             <!-- Regular Config Files Section -->
             {% if configs %}
                 <div class="config-list">
-                    {% for config in configs %}
-                    <div class="config-item">
-                        <span class="config-path">{{ config.path }}</span>
-                        <a href="{{ url_for('edit_config', filepath=config.path.lstrip('/')) }}" class="button button-edit">Edit</a>
-                    </div>
-                    {% endfor %}
-                </div>
+    {% for config in configs %}
+    <div class="config-item">
+        <span class="config-path">{{ config.path }}</span>
+        <a href="{{ url_for('edit_config', filepath=config.path) }}" class="button button-edit">Edit - ⚙️</a>
+    </div>
+    {% endfor %}
+</div>
             {% else %}
                 <p class="no-configs">No configuration files found.</p>
             {% endif %}

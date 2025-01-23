@@ -105,3 +105,12 @@ update_reboot(){
 sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 'reboot'
 echo "rebooting camera..."
 }
+
+update_restart_gs_wfb(){
+sudo systemctl restart wifibroadcast
+sudo systemctl restart wifibroadcast@gs
+}
+
+update_restart_openipc(){
+sudo systemctl restart openipc.service
+}
