@@ -178,8 +178,9 @@ loadConfigBtn.addEventListener('click', async () => {
 });
 
 // Form submission handler
+// Update the form submission event listener
 form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent the default form submission
     hideError();
     showLoading();
 
@@ -200,6 +201,7 @@ form.addEventListener('submit', async (e) => {
     }
 
     try {
+        console.log('Sending changes:', changedFields); // Debug log
         const response = await fetch('/camera/update', {
             method: 'POST',
             headers: {
@@ -208,7 +210,9 @@ form.addEventListener('submit', async (e) => {
             body: JSON.stringify(changedFields)
         });
 
+        console.log('Response status:', response.status); // Debug log
         const result = await response.json();
+        console.log('Response data:', result); // Debug log
 
         if (!response.ok) {
             throw new Error(result.message || 'Failed to update settings');
