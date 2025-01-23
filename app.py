@@ -441,11 +441,11 @@ def camera_settings():
 @app.route('/camera/load-config')
 def load_camera_config():
     try:
-        # First check if camera is reachable
-        if not ping_host('10.5.0.10'):
+        # First check if camera is reachable with retries
+        if not ping_host('10.5.0.10', max_retries=3, timeout=10):
             return jsonify({
                 'success': False,
-                'message': 'Camera is not reachable. Please check the connection.'
+                'message': 'Camera is not reachable after multiple attempts. Please check the connection.'
             }), 404
         
         # If ping successful, proceed with existing functionality
