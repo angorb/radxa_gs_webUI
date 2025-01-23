@@ -70,7 +70,7 @@
         </div>
     </main>
      <script>
-        const errorMessage = document.createElement('div');
+       const errorMessage = document.createElement('div');
 errorMessage.className = 'error-message';
 document.querySelector('.config-container').prepend(errorMessage);
 
@@ -100,6 +100,13 @@ function showError(message) {
 
 function hideError() {
     errorMessage.style.display = 'none';
+}
+
+// Helper function to ensure loading overlay is cleared
+function ensureLoadingCleared(timeoutMs = 5000) {
+    setTimeout(() => {
+        hideLoading();
+    }, timeoutMs);
 }
 
 // WFB Restart Button Handler
@@ -150,6 +157,9 @@ document.getElementById('restartPixelPilotButton').addEventListener('click', asy
     hideError();
     showLoading('Restarting PixelPilot service...');
     
+    // Set a backup timeout to clear loading state
+    ensureLoadingCleared();
+    
     try {
         const response = await fetch('/config/restart-pixelpilot', {
             method: 'POST',
@@ -165,14 +175,15 @@ document.getElementById('restartPixelPilotButton').addEventListener('click', asy
         }
         
         if (result.success) {
+            // Hide loading immediately after success
+            hideLoading();
             alert('PixelPilot service restarted successfully.');
         } else {
             throw new Error(result.message || 'Failed to restart PixelPilot service');
         }
     } catch (error) {
-        showError(error.message || 'Error restarting PixelPilot service. Please try again.');
-    } finally {
         hideLoading();
+        showError(error.message || 'Error restarting PixelPilot service. Please try again.');
     }
 });
     </script>
