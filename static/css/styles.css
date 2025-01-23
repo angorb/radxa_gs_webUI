@@ -5,12 +5,14 @@
     box-sizing: border-box;
 }
 
+/* Base styles */
 body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
     background-color: #f4f4f4;
 }
 
+/* Header styles */
 header {
     background: linear-gradient(to right, #2c3e50, #3498db);
     color: white;
@@ -31,14 +33,19 @@ h2 {
 }
 
 main {
-    padding: 2rem;
+    padding: 1rem;
     max-width: 1200px;
     margin: 0 auto;
 }
 
+/* Button styles */
 .button-container {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
     margin-top: 2rem;
+    padding: 0 1rem;
 }
 
 .button {
@@ -52,52 +59,34 @@ main {
     border: none;
     cursor: pointer;
     font-size: 1rem;
+    width: 100%;
+    max-width: 300px;
+    text-align: center;
 }
 
 .button:hover {
     background-color: #2980b9;
 }
 
-.navigation {
-    margin-bottom: 2rem;
+.button-warning {
+    background-color: #ffc107;
+    color: #212529;
+    border: none;
+    transition: background-color 0.3s ease;
 }
 
-.files-container {
-    background-color: white;
-    padding: 2rem;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.button-warning:hover {
+    background-color: #e0a800;
 }
 
-.file-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+.button-danger {
+    background-color: #dc3545;
+    border: none;
+    transition: background-color 0.3s ease;
 }
 
-.file-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border-radius: 5px;
-    border: 1px solid #dee2e6;
-}
-
-.file-name {
-    flex: 1;
-    font-weight: 500;
-}
-
-.file-size {
-    color: #6c757d;
-    margin: 0 1rem;
-}
-
-.file-actions {
-    display: flex;
-    gap: 0.5rem;
+.button-danger:hover {
+    background-color: #c82333;
 }
 
 .button-download {
@@ -116,92 +105,12 @@ main {
     background-color: #c82333;
 }
 
-.delete-form {
-    display: inline;
-}
-
-.no-files {
-    text-align: center;
-    color: #6c757d;
-    font-style: italic;
-}
-
-.gskey-section {
-    margin-bottom: 2rem;
-    background-color: #fff3cd;
-    border-color: #ffeeba;
-}
-
-.gskey-status {
-    margin-bottom: 1rem;
-}
-
-.status-text {
-    font-family: monospace;
-    color: #856404;
-}
-
-.file-input-container {
-    margin-bottom: 1rem;
-}
-
-.file-input-label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #495057;
-    font-weight: 500;
-}
-
-.file-input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    background-color: white;
-}
-
 .button-upload {
     background-color: #17a2b8;
 }
 
 .button-upload:hover {
     background-color: #138496;
-}
-
-.gskey-form {
-    background-color: white;
-    padding: 1rem;
-    border-radius: 4px;
-    border: 1px solid #ffeeba;
-}
-
-/* Configuration styles */
-.config-container {
-    background-color: white;
-    padding: 2rem;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.config-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.config-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border-radius: 5px;
-    border: 1px solid #dee2e6;
-}
-
-.config-path {
-    font-family: monospace;
-    color: #2c3e50;
 }
 
 .button-edit {
@@ -212,9 +121,83 @@ main {
     background-color: #5a6268;
 }
 
+.button-save {
+    background-color: #28a745;
+}
+
+.button-save:hover {
+    background-color: #218838;
+}
+
+/* Navigation styles */
+.navigation {
+    margin-bottom: 2rem;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+.nav-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.nav-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.nav-buttons .button {
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.nav-instructions {
+    flex-grow: 1;
+}
+
+.steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.step {
+    color: #2c3e50;
+    font-size: 0.9rem;
+    padding: 0.25rem 0;
+}
+
+/* Config list and edit page styles */
+.config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.config-item {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    gap: 0.5rem;
+}
+
+.config-path {
+    font-family: monospace;
+    color: #2c3e50;
+    word-break: break-all;
+}
+
 .config-editor {
     background-color: white;
-    padding: 2rem;
+    padding: 1rem;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
@@ -226,6 +209,15 @@ main {
     padding: 0.5rem;
     background-color: #f8f9fa;
     border-radius: 3px;
+    word-break: break-all;
+}
+
+/* Form and Configuration styles */
+.config-container {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .config-section {
@@ -273,58 +265,45 @@ main {
     text-align: right;
 }
 
-.button-save {
-    background-color: #28a745;
-}
-
-.button-save:hover {
-    background-color: #218838;
-}
-
-.alert {
+/* Files list styles */
+.files-container {
+    background-color: white;
     padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 4px;
-    border: 1px solid transparent;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.alert-success {
-    color: #155724;
-    background-color: #d4edda;
-    border-color: #c3e6cb;
+.file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.alert-error {
-    color: #721c24;
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
+.file-item {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    gap: 0.5rem;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-    h1 {
-        font-size: 1.4rem;
-    }
-    
-    main {
-        padding: 1rem;
-    }
-    
-    .file-item {
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: center;
-    }
-    
-    .file-actions {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .file-size {
-        margin: 0.5rem 0;
-    }
+.file-name {
+    font-weight: 500;
 }
+
+.file-size {
+    color: #6c757d;
+}
+
+.file-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Loading overlay styles */
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -360,6 +339,26 @@ main {
     100% { transform: rotate(360deg); }
 }
 
+/* Alert and error message styles */
+.alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-error {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
 .error-message {
     background-color: #f8d7da;
     border: 1px solid #f5c6cb;
@@ -369,86 +368,120 @@ main {
     margin-bottom: 15px;
     display: none;
 }
-.button-danger {
-    background-color: #dc3545;
-    border: none;
-    transition: background-color 0.3s ease;
-}
 
-.button-danger:hover {
-    background-color: #c82333;
-}
-
+/* Reboot section styles */
 .reboot-section {
     border-top: 1px solid #dee2e6;
     padding-top: 2rem;
     margin-top: 2rem;
-}
-.navigation {
-    margin-bottom: 2rem;
-    background-color: #f8f9fa;
-    padding: 1rem;
-    border-radius: 5px;
-    border: 1px solid #dee2e6;
-}
-
-.nav-content {
-    display: flex;
-    gap: 2rem;
-}
-
-.nav-buttons {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    min-width: 200px;  /* Set minimum width for buttons container */
-    max-width: 250px;  /* Limit maximum width */
+    align-items: center;
 }
 
-.nav-buttons .button {
+/* gs.key file section styles */
+.gskey-section {
+    margin-bottom: 2rem;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 1rem;
+    border-radius: 5px;
+}
+
+.gskey-status {
+    margin-bottom: 1rem;
+}
+
+.status-text {
+    font-family: monospace;
+    color: #856404;
+}
+
+.file-input-container {
+    margin-bottom: 1rem;
+}
+
+.file-input-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #495057;
+    font-weight: 500;
+}
+
+.file-input {
     width: 100%;
-    text-align: center;
-    white-space: nowrap;  /* Prevent text wrapping */
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
 }
 
-.nav-instructions {
-    flex-grow: 1;
-}
+/* Responsive design - Desktop styles */
+@media (min-width: 768px) {
+    main {
+        padding: 2rem;
+    }
 
-.steps-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
+    .button {
+        width: auto;
+        min-width: 200px;
+    }
 
-.step {
-    color: #2c3e50;
-    font-size: 0.9rem;
-    padding: 0.25rem 0;
-}
+    .button-container {
+        flex-direction: row;
+        justify-content: center;
+        gap: 2rem;
+    }
 
-@media (max-width: 768px) {
     .nav-content {
-        flex-direction: column;
+        flex-direction: row;
+        gap: 2rem;
     }
-    
+
     .nav-buttons {
-        min-width: 100%;  /* Full width on mobile */
-        max-width: 100%;
+        min-width: 200px;
+        max-width: 250px;
     }
-}
-.button-danger:hover {
-    background-color: #c82333;
-}
 
-.button-warning {
-    background-color: #ffc107;
-    color: #212529;
-    border: none;
-    transition: background-color 0.3s ease;
-    margin-right: 1rem;
-}
+    .config-container {
+        padding: 2rem;
+    }
 
-.button-warning:hover {
-    background-color: #e0a800;
+    .file-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .file-actions {
+        flex-direction: row;
+        gap: 1rem;
+    }
+
+    .reboot-section {
+        flex-direction: row;
+        justify-content: center;
+        gap: 2rem;
+    }
+
+    .config-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.8rem 1rem;
+    }
+
+    .config-path {
+        margin-right: 1rem;
+        flex: 1;
+    }
+
+    .button-edit {
+        align-self: center;
+    }
+
+    .config-editor {
+        padding: 2rem;
+    }
 }
