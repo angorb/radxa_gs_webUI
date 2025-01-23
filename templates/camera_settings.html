@@ -11,6 +11,14 @@
         <h1>Radxa Zero 3W -- OpenIPC Ground Station</h1>
     </header>
     <main>
+        <div class="loading-overlay">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Loading configuration...</p>
+    </div>
+</div>
+
+<div class="error-message" id="errorMessage"></div>
         <div class="navigation">
             <a href="{{ url_for('index') }}" class="button">Back to Home</a>
             <button id="loadConfig" class="button">Load Current Configuration</button>
