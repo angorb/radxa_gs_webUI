@@ -173,29 +173,43 @@ window.addEventListener('load', storeOriginalValues);
 // Load configuration button handler
 loadConfigBtn.addEventListener('click', async () => {
     hideError();
-    showLoading();
-    updateLoadingMessage('Loading configuration...', 1);
+    let attempt = 1;
+    const maxAttempts = 3;
+    const retryDelay = 2000; // 2 seconds
     
-    try {
-        const response = await fetch('/camera/load-config');
-        const data = await response.json();
+    async function tryLoadConfig() {
+        showLoading();
+        updateLoadingMessage('Loading configuration...', attempt);
         
-        if (!response.ok) {
-            throw new Error(data.message || 'Failed to load configuration');
+        try {
+            const response = await fetch('/camera/load-config');
+            const data = await response.json();
+            
+            if (!response.ok) {
+                if (attempt < maxAttempts && response.status === 404) {  // 404 means camera not reachable
+                    attempt++;
+                    updateLoadingMessage('Retrying connection...', attempt);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    return tryLoadConfig();  // Retry
+                }
+                throw new Error(data.message || 'Failed to load configuration');
+            }
+            
+            if (data.success) {
+                updateFormFields(data.data);
+                updateLoadingMessage('Configuration loaded successfully');
+            } else {
+                throw new Error(data.message || 'Failed to load configuration');
+            }
+        } catch (error) {
+            console.error('Error loading configuration:', error);
+            showError(error.message || 'Error loading configuration. Please try again.');
+        } finally {
+            hideLoading();
         }
-        
-        if (data.success) {
-            updateFormFields(data.data);
-            updateLoadingMessage('Configuration loaded successfully');
-        } else {
-            throw new Error(data.message || 'Failed to load configuration');
-        }
-    } catch (error) {
-        console.error('Error loading configuration:', error);
-        showError(error.message || 'Error loading configuration. Please try again.');
-    } finally {
-        hideLoading();
     }
+    
+    tryLoadConfig();
 });
 
 // Form submission handler
