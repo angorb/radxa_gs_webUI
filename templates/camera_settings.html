@@ -25,20 +25,7 @@
             <a href="{{ url_for('index') }}" class="button">Back to Home</a>
             <button id="loadConfig" class="button">Load Current Configuration</button>
         </div>
-               <div class="navigation">
-            <div class="nav-left">
-                <a href="{{ url_for('index') }}" class="button">Back to Home</a>
-                <button id="loadConfig" class="button">Load Current Configuration</button>
-            </div>
-            <div class="instructions">
-                <ol>
-                    <li>Load Current Configuration</li>
-                    <li>Make changes</li>
-                    <li>Update Settings</li>
-                    <li>Reboot camera for changes to take effect</li>
-                </ol>
-            </div>
-        </div>
+
         <div class="config-container">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
