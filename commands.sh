@@ -110,3 +110,7 @@ update_restart_gs_wfb(){
 sudo systemctl restart wifibroadcast
 sudo systemctl restart wifibroadcast@gs
 }
+
+update_restart_openipc(){
+sudo systemctl restart openipc.service
+}
