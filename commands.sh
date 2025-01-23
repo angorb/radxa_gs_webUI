@@ -90,6 +90,17 @@ update_bandwidth() {
     echo "Setting Bandwidth to $BANDWIDTH"
 }
 
+
+update_restart_majestic(){
+sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 '/etc/init.d/S95majestic restart'
+echo "restarting majestic..."
+}
+
+update_restart_wfb(){
+sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 '/etc/init.d/S98datalink stop;/etc/init.d/S98datalink start'
+echo "restarting wfb..."
+}
+
 update_reboot(){
 sshpass -p '12345' ssh -o StrictHostKeyChecking=no root@10.5.0.10 'reboot'
 echo "rebooting camera..."
