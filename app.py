@@ -301,8 +301,7 @@ def update_camera_settings():
             'ldpc': {'env': 'LDPC', 'func': 'update_ldpc'},
             'mcs_index': {'env': 'MCS_INDEX', 'func': 'update_mcs_index'},
             'fec_k': {'env': 'FEC_K', 'func': 'update_fec_k'},
-            'fec_n': {'env': 'FEC_N', 'func': 'update_fec_n'},
-            'bandwidth': {'env': 'BANDWIDTH', 'func': 'update_bandwidth'}
+            'fec_n': {'env': 'FEC_N', 'func': 'update_fec_n'}
         }
         
         # Only process fields that were actually changed
@@ -348,3 +347,100 @@ def update_camera_settings():
     except Exception as e:
         print(f"Error in update_camera_settings: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/camera/reboot', methods=['POST'])
+def reboot_camera():
+    try:
+        # Check if camera is reachable
+        if not ping_host('10.5.0.10'):
+            return jsonify({
+                'success': False,
+                'message': 'Camera is not reachable. Please check the connection.'
+            }), 404
+            
+        # Execute the reboot command
+        result = subprocess.run(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && update_reboot'],
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Camera reboot initiated successfully'
+        })
+        
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error rebooting camera: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
+
+@app.route('/camera/restart-majestic', methods=['POST'])
+def restart_majestic():
+    try:
+        # Check if camera is reachable
+        if not ping_host('10.5.0.10'):
+            return jsonify({
+                'success': False,
+                'message': 'Camera is not reachable. Please check the connection.'
+            }), 404
+            
+        # Execute the restart majestic command
+        result = subprocess.run(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && update_restart_majestic'],
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Majestic service restarted successfully'
+        })
+        
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error restarting Majestic: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
+
+@app.route('/config/restart-gs-wfb', methods=['POST'])
+def restart_gs_wfb():
+    try:
+        result = subprocess.run(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && update_restart_gs_wfb'],
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'WFB Ground Station services restarted successfully'
+        })
+        
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error restarting WFB services: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
