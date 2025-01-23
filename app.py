@@ -594,8 +594,39 @@ def update_camera_settings():
         print(f"Error in update_camera_settings: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+@app.route('/camera/reboot', methods=['POST'])
+def reboot_camera():
+    try:
+        # Check if camera is reachable
+        if not ping_host('10.5.0.10'):
+            return jsonify({
+                'success': False,
+                'message': 'Camera is not reachable. Please check the connection.'
+            }), 404
+            
+        # Execute the reboot command
+        result = subprocess.run(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && update_reboot'],
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Camera reboot initiated successfully'
+        })
+        
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error rebooting camera: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
