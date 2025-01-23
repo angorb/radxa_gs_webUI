@@ -634,5 +634,57 @@ def restart_majestic():
             'message': f'Unexpected error: {str(e)}'
         }), 500
 
+@app.route('/config/restart-gs-wfb', methods=['POST'])
+def restart_gs_wfb():
+    try:
+        result = subprocess.run(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && update_restart_gs_wfb'],
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'WFB Ground Station services restarted successfully'
+        })
+        
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error restarting WFB services: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
+
+@app.route('/config/restart-pixelpilot', methods=['POST'])
+def restart_pixelpilot():
+    try:
+        result = subprocess.run(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && update_restart_openipc'],
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'PixelPilot service restarted successfully'
+        })
+        
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error restarting PixelPilot: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
