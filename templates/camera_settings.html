@@ -105,6 +105,7 @@ const form = document.getElementById('cameraSettingsForm');
 const loadConfigBtn = document.getElementById('loadConfig');
 const loadingOverlay = document.querySelector('.loading-overlay');
 const errorMessage = document.getElementById('errorMessage');
+const rebootButton = document.getElementById('rebootButton');
 
 // Store original values
 let originalValues = {};
@@ -235,6 +236,42 @@ form.addEventListener('submit', async (e) => {
     } catch (error) {
         console.error('Error updating settings:', error);
         showError(error.message || 'Error updating settings. Please try again.');
+    } finally {
+        hideLoading();
+    }
+    rebootButton.addEventListener('click', async () => {
+    // Show confirmation dialog
+    const confirmed = confirm('Are you sure you want to reboot the camera? This will interrupt any ongoing transmissions.');
+    
+    if (!confirmed) {
+        return;
+    }
+    
+    hideError();
+    showLoading();
+    
+    try {
+        const response = await fetch('/camera/reboot', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to reboot camera');
+        }
+        
+        if (result.success) {
+            alert('Camera reboot initiated successfully. Please wait a few minutes for the camera to come back online.');
+        } else {
+            throw new Error(result.message || 'Failed to reboot camera');
+        }
+    } catch (error) {
+        console.error('Error rebooting camera:', error);
+        showError(error.message || 'Error rebooting camera. Please try again.');
     } finally {
         hideLoading();
     }
