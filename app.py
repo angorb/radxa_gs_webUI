@@ -33,14 +33,25 @@ def ping_host(host):
     command = ['ping', param, '1', host]
     
     for attempt in range(3):  # Try 3 times
+        print(f"Attempting to ping {host} - Attempt {attempt + 1} of 3")
         try:
-            subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=10)
+            result = subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=10)
+            print(f"Ping successful on attempt {attempt + 1}")
             return True
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        except subprocess.CalledProcessError as e:
+            print(f"Ping failed on attempt {attempt + 1} with error: {str(e)}")
             if attempt < 2:  # Don't sleep on last attempt
+                print(f"Waiting 2 seconds before retry...")
                 time.sleep(2)
-            continue
+                continue
+        except subprocess.TimeoutExpired as e:
+            print(f"Ping timed out on attempt {attempt + 1}")
+            if attempt < 2:  # Don't sleep on last attempt
+                print(f"Waiting 2 seconds before retry...")
+                time.sleep(2)
+                continue
     
+    print("All ping attempts failed")
     return False
     
 @app.route('/')
@@ -437,7 +448,11 @@ def camera_settings():
 def load_camera_config():
     try:
         # First check if camera is reachable
-        if not ping_host('10.5.0.10'):
+        print("Starting camera reachability check...")
+        ping_result = ping_host('10.5.0.10')
+        print(f"Final ping result: {ping_result}")
+        
+        if not ping_result:
             return jsonify({
                 'success': False,
                 'message': 'Camera is not reachable after multiple attempts. Please check the connection.'
