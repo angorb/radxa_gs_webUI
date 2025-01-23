@@ -265,10 +265,19 @@ def load_camera_config():
 @app.route('/camera/update', methods=['POST'])
 def update_camera_settings():
     try:
-        changes = request.json
+        # First check if camera is reachable
+        if not ping_host('10.5.0.10'):
+            return jsonify({
+                'success': False,
+                'message': 'Camera is not reachable. Please check the connection.'
+            }), 404
+            
+        changes = request.get_json()
         if not changes:
             return jsonify({'success': False, 'message': 'No changes detected'}), 400
             
+        updated_fields = []
+        
         # Map frontend field names to environment variables and function names
         field_mapping = {
             # Majestic config fields
@@ -286,12 +295,6 @@ def update_camera_settings():
             'fec_n': {'env': 'FEC_N', 'func': 'update_fec_n'}
         }
         
-        # Only process fields that were actually changed
-        changed_fields = set(changes.keys())
-        if not changed_fields:
-            return jsonify({'success': False, 'message': 'No valid changes detected'}), 400
-
-        updated_fields = []
         for field, value in changes.items():
             if field in field_mapping:
                 # Create a new environment with all current env vars
@@ -299,10 +302,8 @@ def update_camera_settings():
                 # Set the specific environment variable for this field
                 env[field_mapping[field]['env']] = str(value)
                 
-                print(f"Updating {field} to {value} using {field_mapping[field]['env']}")
-                
                 try:
-                    # Run only the update function for this specific changed field
+                    # Run the update function for this field
                     result = subprocess.run(
                         ['bash', '-c', f'source {COMMANDS_SCRIPT} && {field_mapping[field]["func"]}'],
                         env=env,
@@ -329,6 +330,6 @@ def update_camera_settings():
     except Exception as e:
         print(f"Error in update_camera_settings: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
-
+        
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
