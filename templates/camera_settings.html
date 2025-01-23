@@ -130,6 +130,7 @@ const loadConfigBtn = document.getElementById('loadConfig');
 const loadingOverlay = document.querySelector('.loading-overlay');
 const errorMessage = document.getElementById('errorMessage');
 const rebootButton = document.getElementById('rebootButton');
+const restartMajesticButton = document.getElementById('restartMajesticButton');
 
 // Store original values
 let originalValues = {};
@@ -329,6 +330,44 @@ rebootButton.addEventListener('click', async () => {
         }
     } catch (error) {
         showError(error.message || 'Error rebooting camera. Please try again.');
+    } finally {
+        hideLoading();
+    }
+});
+
+// Restart Majestic button handler
+restartMajesticButton.addEventListener('click', async () => {
+    const confirmed = confirm('Are you sure you want to restart Majestic? This will temporarily interrupt the video stream.');
+    
+    if (!confirmed) {
+        return;
+    }
+    
+    hideError();
+    showLoading();
+    updateLoadingMessage('Restarting Majestic service...');
+    
+    try {
+        const response = await fetch('/camera/restart-majestic', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to restart Majestic');
+        }
+        
+        if (result.success) {
+            alert('Majestic service restarted successfully.');
+        } else {
+            throw new Error(result.message || 'Failed to restart Majestic');
+        }
+    } catch (error) {
+        showError(error.message || 'Error restarting Majestic. Please try again.');
     } finally {
         hideLoading();
     }
