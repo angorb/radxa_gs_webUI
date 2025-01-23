@@ -111,6 +111,8 @@ sudo systemctl restart wifibroadcast
 sudo systemctl restart wifibroadcast@gs
 }
 
-update_restart_openipc(){
-sudo systemctl restart openipc.service
+update_restart_pixelpilot(){
+sudo pkill pixelpilot
+pixelpilot --osd --osd-elements 0 --osd-custom-message --osd-config /config/scripts/osd.json --screen-mode $(grep "^mode = " /config/scripts/screen-mode | cut -d"=" -f2 | tr -d " ") --dvr-framerate $(grep "^fps = " /config/scripts/rec-fps | cut -d"=" -f2 | tr -d " ") --dvr-fmp4 --dvr-template /media/record_%Y-%m-%d_%H-%M-%S.mp4 & echo $! > /run/pixelpilot.pid
+echo "Restarting pixelpilot process..."
 }
