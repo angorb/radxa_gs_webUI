@@ -426,21 +426,14 @@ def delete_file(filename):
 @app.route('/camera')
 def camera_settings():
     return render_template('camera_settings.html')
-
 @app.route('/camera/load-config')
 def load_camera_config():
     try:
-        # First check if camera is reachable
-        for attempt in range(3):  # Try 3 times
-            print(f"Attempting to connect - Attempt {attempt + 1} of 3")
-            if ping_host('10.5.0.10'):  # Using simple ping without retries since we're handling retries here
-                break
-            if attempt < 2:  # Don't wait after last attempt
-                time.sleep(2)
-        else:  # This runs if no break occurred (all attempts failed)
+        # Single ping attempt with timeout
+        if not ping_host('10.5.0.10'):
             return jsonify({
                 'success': False,
-                'message': 'Camera is not reachable after multiple attempts. Please check the connection.'
+                'message': 'Camera not reachable'
             }), 404
         
         # If ping successful, proceed with existing functionality
