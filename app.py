@@ -27,11 +27,6 @@ COMMANDS_SCRIPT = os.path.join(os.path.dirname(__file__), 'commands.sh')
 def ping_host(host, max_retries=3, timeout=10):
     """
     Returns True if host responds to a ping request, False otherwise
-    
-    Args:
-        host (str): The host to ping
-        max_retries (int): Maximum number of retry attempts
-        timeout (int): Timeout in seconds for each ping attempt
     """
     # Option for count differs in Windows and Unix
     param = '-n' if platform.system().lower() == 'windows' else '-c'
@@ -46,7 +41,7 @@ def ping_host(host, max_retries=3, timeout=10):
                 time.sleep(2)  # Wait 2 seconds between retries
             continue
             
-    return False
+    return False 
     
 @app.route('/')
 def index():
