@@ -88,105 +88,117 @@
     </main>
 
     <script>
-        const form = document.getElementById('cameraSettingsForm');
-        const loadConfigBtn = document.getElementById('loadConfig');
+       const form = document.getElementById('cameraSettingsForm');
+const loadConfigBtn = document.getElementById('loadConfig');
 
-        // Store original values
-        let originalValues = {};
+// Store original values
+let originalValues = {};
 
-        // Function to store current form values
-        function storeOriginalValues() {
-            const inputs = form.querySelectorAll('input');
-            inputs.forEach(input => {
-                originalValues[input.name] = input.value;
+// Function to store current form values
+function storeOriginalValues() {
+    const inputs = form.querySelectorAll('input');
+    inputs.forEach(input => {
+        originalValues[input.name] = input.value;
+    });
+}
+
+// Function to update form fields with new values
+function updateFormFields(data) {
+    Object.entries(data).forEach(([key, value]) => {
+        const input = document.querySelector(`[name="${key}"]`);
+        if (input) {
+            input.value = value;
+            // Update originalValues to reflect the newly loaded configuration
+            originalValues[key] = value;
+        }
+    });
+}
+
+// Store initial values when the page loads
+window.addEventListener('load', storeOriginalValues);
+
+// Load configuration button handler
+loadConfigBtn.addEventListener('click', async () => {
+    try {
+        const response = await fetch('/camera/load-config');
+        if (!response.ok) throw new Error('Failed to load configuration');
+        
+        const data = await response.json();
+        
+        // Update form fields with the received configuration
+        updateFormFields(data);
+        
+        alert('Configuration loaded successfully!');
+    } catch (error) {
+        console.error('Error loading configuration:', error);
+        alert('Error loading configuration. Please try again.');
+    }
+});
+
+// Form submission handler
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Collect changed fields only
+    const formData = new FormData(form);
+    const changedFields = {};
+    for (const [name, value] of formData.entries()) {
+        if (value !== originalValues[name]) {
+            changedFields[name] = value;
+        }
+    }
+
+    const majesticFields = ['fps', 'size', 'bitrate', 'gopSize'];
+    const wfbFields = ['channel', 'txpower_override', 'stbc', 'ldpc', 'mcs_index', 'fec_k', 'fec_n'];
+    const majesticChanges = {};
+    const wfbChanges = {};
+
+    for (const [field, value] of Object.entries(changedFields)) {
+        if (majesticFields.includes(field)) {
+            majesticChanges[field] = value;
+        } else if (wfbFields.includes(field)) {
+            wfbChanges[field] = value;
+        }
+    }
+
+    if (Object.keys(majesticChanges).length === 0 && Object.keys(wfbChanges).length === 0) {
+        alert('No changes detected.');
+        return;
+    }
+
+    try {
+        if (Object.keys(majesticChanges).length > 0) {
+            const response = await fetch('/camera/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(majesticChanges),
             });
+            const result = await response.json();
+            if (!result.success) {
+                alert('Error updating Majestic settings: ' + result.message);
+            }
         }
 
-        // Store initial values when the page loads
-        window.addEventListener('load', storeOriginalValues);
-
-        // Load configuration button handler
-        loadConfigBtn.addEventListener('click', async () => {
-            try {
-                const response = await fetch('/camera/load-config');
-                if (!response.ok) throw new Error('Failed to load configuration');
-                
-                const data = await response.json();
-                Object.entries(data).forEach(([key, value]) => {
-                    const input = document.getElementById(key);
-                    if (input) {
-                        input.value = value;
-                    }
-                });
-                
-                storeOriginalValues();
-            } catch (error) {
-                console.error('Error loading configuration:', error);
+        if (Object.keys(wfbChanges).length > 0) {
+            const response = await fetch('/camera/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(wfbChanges),
+            });
+            const result = await response.json();
+            if (!result.success) {
+                alert('Error updating WFB settings: ' + result.message);
             }
-        });
+        }
 
-        // Form submission handler
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        storeOriginalValues();
+        alert('Settings updated successfully!');
+    } catch (error) {
+        console.error('Error updating settings:', error);
+        alert('Error updating settings. Please try again.');
+    }
+});
 
-            const formData = new FormData(form);
-            const changedFields = {};
-            for (const [name, value] of formData.entries()) {
-                if (value !== originalValues[name]) {
-                    changedFields[name] = value;
-                }
-            }
-
-            const majesticFields = ['fps', 'size', 'bitrate', 'gopSize'];
-            const wfbFields = ['channel', 'txpower_override', 'stbc', 'ldpc', 'mcs_index', 'fec_k', 'fec_n'];
-            const majesticChanges = {};
-            const wfbChanges = {};
-
-            for (const [field, value] of Object.entries(changedFields)) {
-                if (majesticFields.includes(field)) {
-                    majesticChanges[field] = value;
-                } else if (wfbFields.includes(field)) {
-                    wfbChanges[field] = value;
-                }
-            }
-
-            if (Object.keys(majesticChanges).length === 0 && Object.keys(wfbChanges).length === 0) {
-                alert('No changes detected.');
-                return;
-            }
-
-            try {
-                if (Object.keys(majesticChanges).length > 0) {
-                    const response = await fetch('/camera/update', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(majesticChanges),
-                    });
-                    const result = await response.json();
-                    if (!result.success) {
-                        alert('Error updating Majestic settings: ' + result.message);
-                    }
-                }
-
-                if (Object.keys(wfbChanges).length > 0) {
-                    const response = await fetch('/camera/update', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(wfbChanges),
-                    });
-                    const result = await response.json();
-                    if (!result.success) {
-                        alert('Error updating WFB settings: ' + result.message);
-                    }
-                }
-
-                storeOriginalValues();
-                alert('Settings updated successfully!');
-            } catch (error) {
-                console.error('Error updating settings:', error);
-                alert('Error updating settings. Please try again.');
-            }
-        });
     </script>
 </body>
 </html>
