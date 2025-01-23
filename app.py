@@ -430,72 +430,56 @@ def camera_settings():
 @app.route('/camera/load-config')
 def load_camera_config():
     try:
-        # First check if camera is reachable
+        # Single ping attempt with timeout
         if not ping_host('10.5.0.10'):
             return jsonify({
                 'success': False,
-                'message': 'Camera is not reachable. Please check the connection.'
+                'message': 'Camera not reachable'
             }), 404
         
-        # If ping successful, try to read configs
-        try:
-            wfb_output = subprocess.check_output(
-                ['bash', '-c', f'source {COMMANDS_SCRIPT} && read_wfb_config'], 
-                stderr=subprocess.STDOUT,
-                text=True,
-                timeout=5  # Add timeout
-            )
-            
-            majestic_output = subprocess.check_output(
-                ['bash', '-c', f'source {COMMANDS_SCRIPT} && read_majestic_config'],
-                stderr=subprocess.STDOUT,
-                text=True,
-                timeout=5  # Add timeout
-            )
-        except subprocess.CalledProcessError as e:
-            return jsonify({
-                'success': False,
-                'message': 'Failed to read camera configuration. SSH error.'
-            }), 500
-        except subprocess.TimeoutExpired:
-            return jsonify({
-                'success': False,
-                'message': 'Timeout while reading camera configuration.'
-            }), 500
-            
-        # Parse configs without default values
+        # If ping successful, proceed with existing functionality
+        wfb_output = subprocess.check_output(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && read_wfb_config'], 
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        
+        majestic_output = subprocess.check_output(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && read_majestic_config'],
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        
+        # Rest of your existing parsing logic...
+        # Parse WFB config
         wfb_config = {}
         for line in wfb_output.splitlines():
             if '=' in line and not line.startswith('#'):
                 key, value = line.split('=', 1)
                 wfb_config[key.strip()] = value.strip()
         
+        # Parse Majestic YAML config
         try:
             yaml_content = majestic_output.replace("Reading majestic configuration", "").strip()
             majestic_config = yaml.safe_load(yaml_content)
             video_config = majestic_config.get('video0', {})
-            if not video_config:
-                raise ValueError("No video configuration found")
-        except (yaml.YAMLError, ValueError) as e:
-            return jsonify({
-                'success': False,
-                'message': f'Failed to parse camera configuration: {str(e)}'
-            }), 500
+        except yaml.YAMLError as e:
+            print(f"YAML parsing error: {e}")
+            video_config = {}
         
-        # Only create config if we have actual values
         config = {
-            'fps': str(video_config['fps']),
-            'size': str(video_config['size']),
-            'bitrate': str(video_config['bitrate']),
-            'gopSize': str(video_config['gopSize']),
-            'channel': wfb_config['channel'],
-            'txpower_override': wfb_config['driver_txpower_override'],
-            'stbc': wfb_config['stbc'],
-            'ldpc': wfb_config['ldpc'],
-            'mcs_index': wfb_config['mcs_index'],
-            'fec_k': wfb_config['fec_k'],
-            'fec_n': wfb_config['fec_n'],
-            'bandwidth': wfb_config['bandwidth']
+            'fps': str(video_config.get('fps', '60')),
+            'size': str(video_config.get('size', '1920x1080')),
+            'bitrate': str(video_config.get('bitrate', '4096')),
+            'gopSize': str(video_config.get('gopSize', '1')),
+            'channel': wfb_config.get('channel', '161'),
+            'txpower_override': wfb_config.get('driver_txpower_override', '1'),
+            'stbc': wfb_config.get('stbc', '0'),
+            'ldpc': wfb_config.get('ldpc', '0'),
+            'mcs_index': wfb_config.get('mcs_index', '1'),
+            'fec_k': wfb_config.get('fec_k', '8'),
+            'fec_n': wfb_config.get('fec_n', '12'),
+            'bandwidth': wfb_config.get('bandwidth', '20')
         }
         
         return jsonify({
@@ -503,6 +487,11 @@ def load_camera_config():
             'data': config
         })
         
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error executing SSH commands: {str(e)}'
+        }), 500
     except Exception as e:
         return jsonify({
             'success': False,
