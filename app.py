@@ -9,6 +9,7 @@ import yaml
 import re
 import subprocess
 import platform
+import time
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -25,8 +26,7 @@ COMMANDS_SCRIPT = os.path.join(os.path.dirname(__file__), 'commands.sh')
 
 def ping_host(host, max_retries=3, timeout=10):
     """
-    Returns True if host responds to a ping request, False otherwise.
-    Includes retry logic and configurable timeout.
+    Returns True if host responds to a ping request, False otherwise
     
     Args:
         host (str): The host to ping
@@ -45,9 +45,9 @@ def ping_host(host, max_retries=3, timeout=10):
             if attempt < max_retries - 1:  # Don't sleep on the last attempt
                 time.sleep(2)  # Wait 2 seconds between retries
             continue
-    
+            
     return False
-
+    
 @app.route('/')
 def index():
     return render_template('index.html')
