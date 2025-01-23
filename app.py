@@ -24,24 +24,24 @@ CONFIG_WHITELIST = [
 ]
 COMMANDS_SCRIPT = os.path.join(os.path.dirname(__file__), 'commands.sh')
 
-def ping_host(host, max_retries=3, timeout=10):
+def ping_host(host):
     """
-    Returns True if host responds to a ping request, False otherwise
+    Returns True if host responds to a ping request within 10 seconds, False otherwise.
+    Includes 3 retry attempts.
     """
-    # Option for count differs in Windows and Unix
     param = '-n' if platform.system().lower() == 'windows' else '-c'
     command = ['ping', param, '1', host]
     
-    for attempt in range(max_retries):
+    for attempt in range(3):  # Try 3 times
         try:
-            subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=timeout)
+            subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=10)
             return True
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            if attempt < max_retries - 1:  # Don't sleep on the last attempt
-                time.sleep(2)  # Wait 2 seconds between retries
+            if attempt < 2:  # Don't sleep on last attempt
+                time.sleep(2)
             continue
-            
-    return False 
+    
+    return False
     
 @app.route('/')
 def index():
