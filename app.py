@@ -664,7 +664,7 @@ def restart_gs_wfb():
 def restart_pixelpilot():
     try:
         result = subprocess.run(
-            ['bash', '-c', f'source {COMMANDS_SCRIPT} && update_restart_openipc'],
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && update_restart_pixelpilot'],
             check=True,
             text=True,
             capture_output=True
