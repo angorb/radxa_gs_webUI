@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import yaml
 import re
+import subprocess
+import platform
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -20,6 +22,20 @@ CONFIG_WHITELIST = [
     '/config/scripts/rec-fps'
 ]
 COMMANDS_SCRIPT = os.path.join(os.path.dirname(__file__), 'commands.sh')
+
+def ping_host(host):
+    """
+    Returns True if host responds to a ping request, False otherwise
+    """
+    # Option for count differs in Windows and Unix
+    param = '-n' if platform.system().lower() == 'windows' else '-c'
+    command = ['ping', param, '1', host]
+    
+    try:
+        subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=5)
+        return True
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return False
 
 def read_ini_file(filepath: str) -> Dict:
     config = configparser.ConfigParser()
@@ -179,15 +195,27 @@ def camera_settings():
 @app.route('/camera/load-config')
 def load_camera_config():
     try:
-        # Run the read config commands
-        wfb_output = subprocess.check_output(['bash', '-c', f'source {COMMANDS_SCRIPT} && read_wfb_config'], 
-                                          stderr=subprocess.STDOUT,
-                                          text=True)
+        # First check if camera is reachable
+        if not ping_host('10.5.0.10'):
+            return jsonify({
+                'success': False,
+                'message': 'Camera is not reachable. Please check the connection.'
+            }), 404
         
-        majestic_output = subprocess.check_output(['bash', '-c', f'source {COMMANDS_SCRIPT} && read_majestic_config'],
-                                                stderr=subprocess.STDOUT,
-                                                text=True)
+        # If ping successful, proceed with existing functionality
+        wfb_output = subprocess.check_output(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && read_wfb_config'], 
+            stderr=subprocess.STDOUT,
+            text=True
+        )
         
+        majestic_output = subprocess.check_output(
+            ['bash', '-c', f'source {COMMANDS_SCRIPT} && read_majestic_config'],
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        
+        # Rest of your existing parsing logic...
         # Parse WFB config
         wfb_config = {}
         for line in wfb_output.splitlines():
@@ -199,19 +227,11 @@ def load_camera_config():
         try:
             yaml_content = majestic_output.replace("Reading majestic configuration", "").strip()
             majestic_config = yaml.safe_load(yaml_content)
-            
-            # Extract only video0 section
             video_config = majestic_config.get('video0', {})
-            print("Found video0 config:", video_config)
-            
         except yaml.YAMLError as e:
             print(f"YAML parsing error: {e}")
             video_config = {}
-        except Exception as e:
-            print(f"Error processing Majestic config: {e}")
-            video_config = {}
         
-        # Combine configurations
         config = {
             'fps': str(video_config.get('fps', '60')),
             'size': str(video_config.get('size', '1920x1080')),
@@ -226,11 +246,21 @@ def load_camera_config():
             'fec_n': wfb_config.get('fec_n', '12')
         }
         
-        print("Final config:", config)
-        return jsonify(config)
+        return jsonify({
+            'success': True,
+            'data': config
+        })
+        
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error executing SSH commands: {str(e)}'
+        }), 500
     except Exception as e:
-        print(f"Error in load_camera_config: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
 
 @app.route('/camera/update', methods=['POST'])
 def update_camera_settings():
