@@ -12,13 +12,14 @@
     </header>
     <main>
         <div class="loading-overlay">
-    <div class="loading-content">
-        <div class="spinner"></div>
-        <p>Loading configuration...</p>
-    </div>
-</div>
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>Loading configuration...</p>
+            </div>
+        </div>
 
-<div class="error-message" id="errorMessage"></div>
+        <div class="error-message" id="errorMessage"></div>
+
         <div class="navigation">
             <a href="{{ url_for('index') }}" class="button">Back to Home</a>
             <button id="loadConfig" class="button">Load Current Configuration</button>
@@ -33,7 +34,7 @@
                 {% endif %}
             {% endwith %}
 
-            <form id="cameraSettingsForm" onsubmit="return false; method="POST">
+            <form id="cameraSettingsForm" onsubmit="return false;">
                 <!-- Majestic Section -->
                 <div class="config-section">
                     <h3>Majestic Settings</h3>
@@ -92,190 +93,193 @@
                     <button type="submit" class="button button-save">Update Settings</button>
                 </div>
             </form>
-            <div class="reboot-section" style="margin-top: 2rem; text-align: center;">
-    <button id="rebootButton" class="button button-danger" style="background-color: #dc3545; color: white; padding: 12px 24px; font-weight: bold;">
-        Reboot Camera
-    </button>
-</div>
+
+            <div class="reboot-section">
+                <button id="rebootButton" class="button button-danger">
+                    Reboot Camera
+                </button>
+            </div>
         </div>
     </main>
 
     <script>
-const form = document.getElementById('cameraSettingsForm');
-const loadConfigBtn = document.getElementById('loadConfig');
-const loadingOverlay = document.querySelector('.loading-overlay');
-const errorMessage = document.getElementById('errorMessage');
-const rebootButton = document.getElementById('rebootButton');
+        const form = document.getElementById('cameraSettingsForm');
+        const loadConfigBtn = document.getElementById('loadConfig');
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        const errorMessage = document.getElementById('errorMessage');
+        const rebootButton = document.getElementById('rebootButton');
 
-// Store original values
-let originalValues = {};
+        // Store original values
+        let originalValues = {};
 
-// Function to show loading overlay
-function showLoading() {
-    loadingOverlay.style.display = 'flex';
-    form.style.opacity = '0.5';
-    form.style.pointerEvents = 'none';
-}
-
-// Function to hide loading overlay
-function hideLoading() {
-    loadingOverlay.style.display = 'none';
-    form.style.opacity = '1';
-    form.style.pointerEvents = 'auto';
-}
-
-// Function to show error message
-function showError(message) {
-    errorMessage.textContent = message;
-    errorMessage.style.display = 'block';
-}
-
-// Function to hide error message
-function hideError() {
-    errorMessage.style.display = 'none';
-}
-
-// Function to store current form values
-function storeOriginalValues() {
-    const inputs = form.querySelectorAll('input');
-    inputs.forEach(input => {
-        originalValues[input.name] = input.value;
-    });
-}
-
-// Function to update form fields with new values
-function updateFormFields(data) {
-    Object.entries(data).forEach(([key, value]) => {
-        const input = document.querySelector(`[name="${key}"]`);
-        if (input) {
-            input.value = value;
-            originalValues[key] = value;
-        }
-    });
-}
-
-// Store initial values when the page loads
-window.addEventListener('load', storeOriginalValues);
-
-// Load configuration button handler
-loadConfigBtn.addEventListener('click', async () => {
-    hideError();
-    showLoading();
-    
-    try {
-        const response = await fetch('/camera/load-config');
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message || 'Failed to load configuration');
-        }
-        
-        if (data.success) {
-            updateFormFields(data.data);
-        } else {
-            throw new Error(data.message || 'Failed to load configuration');
-        }
-    } catch (error) {
-        console.error('Error loading configuration:', error);
-        showError(error.message || 'Error loading configuration. Please try again.');
-    } finally {
-        hideLoading();
-    }
-});
-
-// Form submission handler
-// Update the form submission event listener
-form.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Prevent the default form submission
-    hideError();
-    showLoading();
-
-    // Collect changed fields only
-    const formData = new FormData(form);
-    const changedFields = {};
-    
-    for (const [name, value] of formData.entries()) {
-        if (value !== originalValues[name]) {
-            changedFields[name] = value;
-        }
-    }
-
-    if (Object.keys(changedFields).length === 0) {
-        hideLoading();
-        showError('No changes detected.');
-        return;
-    }
-
-    try {
-        console.log('Sending changes:', changedFields); // Debug log
-        const response = await fetch('/camera/update', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(changedFields)
-        });
-
-        console.log('Response status:', response.status); // Debug log
-        const result = await response.json();
-        console.log('Response data:', result); // Debug log
-
-        if (!response.ok) {
-            throw new Error(result.message || 'Failed to update settings');
+        // Function to show loading overlay
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+            form.style.opacity = '0.5';
+            form.style.pointerEvents = 'none';
         }
 
-        if (result.success) {
-            // Update original values to reflect the changes
-            for (const [field, value] of Object.entries(changedFields)) {
-                originalValues[field] = value;
-            }
-            alert('Settings updated successfully!');
-        } else {
-            throw new Error(result.message || 'Failed to update settings');
+        // Function to hide loading overlay
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+            form.style.opacity = '1';
+            form.style.pointerEvents = 'auto';
         }
-    } catch (error) {
-        console.error('Error updating settings:', error);
-        showError(error.message || 'Error updating settings. Please try again.');
-    } finally {
-        hideLoading();
-    }
-    rebootButton.addEventListener('click', async () => {
-    // Show confirmation dialog
-    const confirmed = confirm('Are you sure you want to reboot the camera? This will interrupt any ongoing transmissions.');
-    
-    if (!confirmed) {
-        return;
-    }
-    
-    hideError();
-    showLoading();
-    
-    try {
-        const response = await fetch('/camera/reboot', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
+
+        // Function to show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        // Function to hide error message
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        // Function to store current form values
+        function storeOriginalValues() {
+            const inputs = form.querySelectorAll('input');
+            inputs.forEach(input => {
+                originalValues[input.name] = input.value;
+            });
+        }
+
+        // Function to update form fields with new values
+        function updateFormFields(data) {
+            Object.entries(data).forEach(([key, value]) => {
+                const input = document.querySelector(`[name="${key}"]`);
+                if (input) {
+                    input.value = value;
+                    originalValues[key] = value;
+                }
+            });
+        }
+
+        // Store initial values when the page loads
+        window.addEventListener('load', storeOriginalValues);
+
+        // Load configuration button handler
+        loadConfigBtn.addEventListener('click', async () => {
+            hideError();
+            showLoading();
+            
+            try {
+                const response = await fetch('/camera/load-config');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to load configuration');
+                }
+                
+                if (data.success) {
+                    updateFormFields(data.data);
+                } else {
+                    throw new Error(data.message || 'Failed to load configuration');
+                }
+            } catch (error) {
+                console.error('Error loading configuration:', error);
+                showError(error.message || 'Error loading configuration. Please try again.');
+            } finally {
+                hideLoading();
             }
         });
-        
-        const result = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(result.message || 'Failed to reboot camera');
-        }
-        
-        if (result.success) {
-            alert('Camera reboot initiated successfully. Please wait a few minutes for the camera to come back online.');
-        } else {
-            throw new Error(result.message || 'Failed to reboot camera');
-        }
-    } catch (error) {
-        console.error('Error rebooting camera:', error);
-        showError(error.message || 'Error rebooting camera. Please try again.');
-    } finally {
-        hideLoading();
-    }
-});
-</script>
+
+        // Form submission handler
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+            showLoading();
+
+            // Collect changed fields only
+            const formData = new FormData(form);
+            const changedFields = {};
+            
+            for (const [name, value] of formData.entries()) {
+                if (value !== originalValues[name]) {
+                    changedFields[name] = value;
+                }
+            }
+
+            if (Object.keys(changedFields).length === 0) {
+                hideLoading();
+                showError('No changes detected.');
+                return;
+            }
+
+            try {
+                console.log('Sending changes:', changedFields);
+                const response = await fetch('/camera/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(changedFields)
+                });
+
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Response data:', result);
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to update settings');
+                }
+
+                if (result.success) {
+                    // Update original values to reflect the changes
+                    for (const [field, value] of Object.entries(changedFields)) {
+                        originalValues[field] = value;
+                    }
+                    alert('Settings updated successfully!');
+                } else {
+                    throw new Error(result.message || 'Failed to update settings');
+                }
+            } catch (error) {
+                console.error('Error updating settings:', error);
+                showError(error.message || 'Error updating settings. Please try again.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Reboot button handler
+        rebootButton.addEventListener('click', async () => {
+            // Show confirmation dialog
+            const confirmed = confirm('Are you sure you want to reboot the camera? This will interrupt any ongoing transmissions.');
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            hideError();
+            showLoading();
+            
+            try {
+                const response = await fetch('/camera/reboot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to reboot camera');
+                }
+                
+                if (result.success) {
+                    alert('Camera reboot initiated successfully. Please wait a few minutes for the camera to come back online.');
+                } else {
+                    throw new Error(result.message || 'Failed to reboot camera');
+                }
+            } catch (error) {
+                console.error('Error rebooting camera:', error);
+                showError(error.message || 'Error rebooting camera. Please try again.');
+            } finally {
+                hideLoading();
+            }
+        });
+    </script>
 </body>
 </html>
