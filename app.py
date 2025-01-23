@@ -239,10 +239,6 @@ def update_camera_settings():
         if not changes:
             return jsonify({'success': False, 'message': 'No changes detected'}), 400
             
-        # Group fields by config type to minimize unnecessary updates
-        majestic_fields = {'fps', 'size', 'bitrate', 'gopSize'}
-        wfb_fields = {'channel', 'txpower_override', 'stbc', 'ldpc', 'mcs_index', 'fec_k', 'fec_n'}
-        
         # Map frontend field names to environment variables and function names
         field_mapping = {
             # Majestic config fields
@@ -260,7 +256,7 @@ def update_camera_settings():
             'fec_n': {'env': 'FEC_N', 'func': 'update_fec_n'}
         }
         
-        # Execute update functions for changed fields only
+        # Only process fields that were actually changed
         changed_fields = set(changes.keys())
         if not changed_fields:
             return jsonify({'success': False, 'message': 'No valid changes detected'}), 400
@@ -276,7 +272,7 @@ def update_camera_settings():
                 print(f"Updating {field} to {value} using {field_mapping[field]['env']}")
                 
                 try:
-                    # Run the update function with the modified environment
+                    # Run only the update function for this specific changed field
                     result = subprocess.run(
                         ['bash', '-c', f'source {COMMANDS_SCRIPT} && {field_mapping[field]["func"]}'],
                         env=env,
