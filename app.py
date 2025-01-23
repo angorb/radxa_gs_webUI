@@ -214,7 +214,7 @@ def load_camera_config():
             'ldpc': wfb_config.get('ldpc', '0'),
             'mcs_index': wfb_config.get('mcs_index', '1'),
             'fec_k': wfb_config.get('fec_k', '8'),
-            'fec_n': wfb_config.get('fec_n', '12')
+            'fec_n': wfb_config.get('fec_n', '12'),
             'bandwidth': wfb_config.get('bandwidth', '20')
         }
         
@@ -478,7 +478,7 @@ def load_camera_config():
             'ldpc': wfb_config.get('ldpc', '0'),
             'mcs_index': wfb_config.get('mcs_index', '1'),
             'fec_k': wfb_config.get('fec_k', '8'),
-            'fec_n': wfb_config.get('fec_n', '12')
+            'fec_n': wfb_config.get('fec_n', '12'),
             'bandwidth': wfb_config.get('bandwidth', '20')
         }
         
