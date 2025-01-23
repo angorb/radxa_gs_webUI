@@ -63,9 +63,6 @@
                 <button id="restartWfbButton" class="button">
                     Restart WFB@GS
                 </button>
-                <button id="restartPixelPilotButton" class="button">
-                    Restart PixelPilot
-                </button>
             </div>
         </div>
     </main>
@@ -133,42 +130,6 @@
                 }
             } catch (error) {
                 showError(error.message || 'Error restarting WFB services. Please try again.');
-            } finally {
-                hideLoading();
-            }
-        });
-
-        document.getElementById('restartPixelPilotButton').addEventListener('click', async () => {
-            const confirmed = confirm('Are you sure you want to restart the PixelPilot service?');
-            
-            if (!confirmed) {
-                return;
-            }
-            
-            hideError();
-            showLoading('Restarting PixelPilot service...');
-            
-            try {
-                const response = await fetch('/config/restart-pixelpilot', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(result.message || 'Failed to restart PixelPilot');
-                }
-                
-                if (result.success) {
-                    alert('PixelPilot service restarted successfully.');
-                } else {
-                    throw new Error(result.message || 'Failed to restart PixelPilot');
-                }
-            } catch (error) {
-                showError(error.message || 'Error restarting PixelPilot. Please try again.');
             } finally {
                 hideLoading();
             }
